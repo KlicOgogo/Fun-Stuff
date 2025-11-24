@@ -201,7 +201,7 @@ def _get_matchup_schedule(matchup_text, prev_matchup_number):
 
 def _get_matchup_scores(scoreboard_html, team_names, league_id, league_name):
     matchup_scores = []
-    for scoreboard_row in scoreboard_html.findAll('div', {'Scoreboard__Row'}):
+    for scoreboard_row in scoreboard_html.findAll('div', {'class': 'Scoreboard__Row'}):
         res = []
         for team_data_html in scoreboard_row.findAll('li', 'ScoreboardScoreCell__Item'):
             team_id_a_tag = team_data_html.findAll('a', {'class': 'AnchorLink'})
@@ -222,7 +222,7 @@ def _get_matchup_scores(scoreboard_html, team_names, league_id, league_name):
 
 def _get_team_names(scoreboard_html):
     team_names = {}
-    for scoreboard_row in scoreboard_html.findAll('div', {'Scoreboard__Row'}):
+    for scoreboard_row in scoreboard_html.findAll('div', {'class': 'Scoreboard__Row'}):
         for team_data_html in scoreboard_row.findAll('li', 'ScoreboardScoreCell__Item'):
             team_id_a_tag = team_data_html.findAll('a', {'class': 'AnchorLink'})
             team_id = re.findall(r'teamId=(\d+)', team_id_a_tag[0]['href'])[0]
@@ -292,7 +292,7 @@ def gk_games(matchup_box_scores_data):
 
 def _matchup_category_pairs(sports, scoreboard_html, league_id, team_names):
     pairs = []
-    for scoreboard_row in scoreboard_html.findAll('div', {'Scoreboard__Row'}):
+    for scoreboard_row in scoreboard_html.findAll('div', {'class': 'Scoreboard__Row'}):
         opponents = scoreboard_row.findAll('li', 'ScoreboardScoreCell__Item')
         team_ids = []
         for o in opponents:
@@ -384,14 +384,16 @@ def scoreboard(league_id, sports, matchup, browser, online_matchups, is_category
     soups = []
     espn_scoreboard_url = f'https://fantasy.espn.com/{sports}/league/scoreboard'
     for m in range(1, matchup + 1):
-        matchup_html_path = os.path.join(offline_scoreboard_dir, f'matchup_{m}.html')
-        if m in online_matchups or not os.path.exists(matchup_html_path):
-            scoreboard_url = f'{espn_scoreboard_url}?leagueId={league_id}&matchupPeriodId={m}'
-            html_soup = browser.read_page_source(scoreboard_url)
-            with open(matchup_html_path, 'w', encoding='utf-8') as html_fp:
-                html_fp.write(str(html_soup))
-        else:
-            html_soup = BeautifulSoup(open(matchup_html_path, 'r', encoding='utf-8'), features='html.parser')
+        html_soup = None
+        while html_soup is None or html_soup.find('div', {'class': 'Scoreboard__Row'}) is None:
+            matchup_html_path = os.path.join(offline_scoreboard_dir, f'matchup_{m}.html')
+            if m in online_matchups or not os.path.exists(matchup_html_path):
+                scoreboard_url = f'{espn_scoreboard_url}?leagueId={league_id}&matchupPeriodId={m}'
+                html_soup = browser.read_page_source(scoreboard_url)
+                with open(matchup_html_path, 'w', encoding='utf-8') as html_fp:
+                    html_fp.write(str(html_soup))
+            else:
+                html_soup = BeautifulSoup(open(matchup_html_path, 'r', encoding='utf-8'), features='html.parser')
         soups.append(html_soup)
 
     league_name = soups[-1].findAll('h3')[0].text
