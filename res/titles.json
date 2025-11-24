@@ -1,0 +1,39 @@
+{
+    "scores": "Scores",
+    "scores_opp": "Opponent scores",
+    "luck": "Luck scores",
+    "luck_opp": "Opponent luck scores",
+    "places": "Places",
+    "places_opp": "Opponent places",
+    "mean": "Mean scores",
+    "mean_places": "Mean scores places",
+    "pairwise_h2h": "Pairwise comparisons h2h",
+    
+    "places_overall": "Overall places",
+    "best_matchup": "Best scores this matchup",
+    "best_season": "Best scores this season",
+    "best_season_total": "Best total scores this season",
+    "mean_season_total": "Leagues mean total scores this season",
+
+    "matchup": "Past matchup stats",
+    "pairwise_matchup": "Pairwise comparisons by matchup",
+    "pairwise_matchup_opp": "Pairwise comparisons by matchup for opponent",
+    "expected_cat": "Expected category win stats",
+    "expected_win": "Expected matchup win stats",
+    "matchup_overall": "Past matchup overall stats",
+    "minutes": "Minutes",
+    "minutes_places": "Minutes places",
+    "games": "Player games",
+    "games_places": "Player games places",
+    
+    "team_category_record": "{}: category record",
+    "result_expectation": "{}: result expectation",
+
+    "category_win_stats": "Category win stats",
+    "recent_category_win_stats": "Category win stats (last {})",
+    "category_power": "Category power",
+    "recent_category_power": "Category power (last {})",
+    "category_rankings": "Category rankings",
+    "result_expectation_h2h": "Result expectation h2h",
+    "category_places": "{}: places"
+}

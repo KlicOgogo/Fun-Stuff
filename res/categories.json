@@ -1,0 +1,155 @@
+[
+    {
+        "sports": "basketball",
+        "leagues": "134112",
+        "tiebreaker": "NO",
+        "is_each_category": true,
+        "is_full_support": true,
+        "is_playoffs_support": false,
+        "is_analytics_enabled": "1"
+    },
+    {
+        "sports": "basketball",
+        "leagues": "1065411117",
+        "tiebreaker": "NO",
+        "is_each_category": true,
+        "is_full_support": true,
+        "is_playoffs_support": true,
+        "is_analytics_enabled": "1"
+    },
+    {
+        "sports": "basketball",
+        "leagues": "30481",
+        "tiebreaker": "PTS",
+        "is_each_category": false,
+        "is_full_support": true,
+        "is_playoffs_support": true,
+        "is_analytics_enabled": "1"
+    },
+    {
+        "sports": "basketball",
+        "leagues": "30366543",
+        "tiebreaker": "PTS",
+        "is_each_category": false,
+        "is_full_support": true,
+        "is_playoffs_support": true,
+        "is_analytics_enabled": "1"
+    },
+    {
+        "sports": "basketball",
+        "leagues": "1033879963",
+        "tiebreaker": "NO",
+        "is_each_category": false,
+        "is_full_support": true,
+        "is_playoffs_support": true,
+        "is_analytics_enabled": "1"
+    },
+    {
+        "sports": "basketball",
+        "leagues": "498193161",
+        "tiebreaker": "NO",
+        "is_each_category": false,
+        "is_full_support": true,
+        "is_playoffs_support": false,
+        "is_analytics_enabled": "1"
+    },
+    {
+        "sports": "basketball",
+        "leagues": "229937",
+        "tiebreaker": "NO",
+        "is_each_category": false,
+        "is_full_support": true,
+        "is_playoffs_support": false,
+        "is_analytics_enabled": "1"
+    },
+    {
+        "sports": "basketball",
+        "leagues": "471862341",
+        "tiebreaker": "NO",
+        "is_each_category": false,
+        "is_full_support": true,
+        "is_playoffs_support": false,
+        "is_analytics_enabled": "1"
+    },
+    {
+        "sports": "basketball",
+        "leagues": "1826499568",
+        "tiebreaker": "NO",
+        "is_each_category": true,
+        "is_full_support": true,
+        "is_playoffs_support": false,
+        "is_analytics_enabled": "1"
+    },
+    {
+        "sports": "basketball",
+        "leagues": "174837",
+        "tiebreaker": "NO",
+        "is_each_category": false,
+        "is_full_support": true,
+        "is_playoffs_support": true,
+        "is_analytics_enabled": "1"
+    },
+    {
+        "sports": "basketball",
+        "leagues": "142634",
+        "tiebreaker": "NO",
+        "is_each_category": false,
+        "is_full_support": true,
+        "is_playoffs_support": true,
+        "is_analytics_enabled": "1"
+    },
+    {
+        "sports": "basketball",
+        "leagues": "99121987",
+        "tiebreaker": "NO",
+        "is_each_category": false,
+        "is_full_support": true,
+        "is_playoffs_support": true,
+        "is_analytics_enabled": "1"
+    },
+    {
+        "sports": "basketball",
+        "leagues": "199973",
+        "tiebreaker": "NO",
+        "is_each_category": false,
+        "is_full_support": true,
+        "is_playoffs_support": true,
+        "is_analytics_enabled": "1"
+    },
+    {
+        "sports": "basketball",
+        "leagues": "282844",
+        "tiebreaker": "NO",
+        "is_each_category": false,
+        "is_full_support": true,
+        "is_playoffs_support": true,
+        "is_analytics_enabled": "1"
+    },
+    {
+        "sports": "basketball",
+        "leagues": "1136470944",
+        "tiebreaker": "NO",
+        "is_each_category": false,
+        "is_full_support": true,
+        "is_playoffs_support": true,
+        "is_analytics_enabled": "1"
+    },
+    {
+        "sports": "basketball",
+        "leagues": "909609212",
+        "tiebreaker": "NO",
+        "is_each_category": false,
+        "is_full_support": true,
+        "is_playoffs_support": true,
+        "is_analytics_enabled": "1"
+    },
+    {
+        "sports": "basketball",
+        "leagues": "1180411548",
+        "tiebreaker": "NO",
+        "is_each_category": true,
+        "is_full_support": true,
+        "is_playoffs_support": true,
+        "is_analytics_enabled": "1"
+    }
+]

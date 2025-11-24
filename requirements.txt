@@ -1,0 +1,7 @@
+beautifulsoup4
+GitPython
+Jinja2
+numpy
+pandas
+selenium
+python-telegram-bot==13.11

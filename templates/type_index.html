@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+	<style>
+		a.league:link {
+			color: blue;
+			background-color: transparent;
+			text-decoration: none;
+		}
+		
+		a.league:hover {
+			color: red;
+			background-color: transparent;
+			text-decoration: none;
+		}
+		
+		a.league:active {
+			color: red;
+			background-color: transparent;
+			text-decoration: underline;
+		}
+
+		a.text:link {
+			color: blue;
+			background-color: transparent;
+			text-decoration: none;
+		}
+		
+		a.text:hover {
+			color: red;
+			background-color: transparent;
+			text-decoration: none;
+		}
+		
+		a.text:visited {
+			color: red;
+			background-color: transparent;
+			text-decoration: none;
+        }
+
+		a.text:active {
+			color: red;
+			background-color: transparent;
+			text-decoration: underline;
+		}
+
+		body {
+			overflow-y:scroll;
+		}
+	</style>
+	
+	<head>
+        <link rel="icon" type="image/png" href="https://klicogogo.github.io/res/favicon.ico"/>
+    </head>
+	<!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ google_analytics_key }}"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', '{{ google_analytics_key }}');
+    </script>
+
+	<body align="center">
+		<title>{{ title }}</title>
+        <h1>{{ title }}</h1>
+		{%- if indexes|length > 0 %}
+		<h2>Leagues</h2>
+		{%- for league_name, index_url in indexes|dictsort %}
+			<h3><a href="{{ index_url }}" class="league">{{ league_name }}</a></h3>
+		{%- endfor %}
+		{%- endif %}
+		
+		<h1 style="margin:0">About</h1>
+		<p>A tool to visualize various stats based on fantasy results. <br>
+			<b>Author</b>: <a href="https://t.me/klicunou" class="text">Andrei Klitsunou</a>. <br> 
+			<b>Credits</b>: Alexander Nikolaev and Sergei Novgorodcev. <br>
+			<b>Support</b>: <a href="https://yoomoney.ru/to/4100116057812582" class="text">YooMoney</a>. <br>
+			<b>Subscribe to updates</b>: <a href="https://t.me/fun_stuff_updates" class="text">Telegram</a>.
+		</p>
+	</body>
+</html>

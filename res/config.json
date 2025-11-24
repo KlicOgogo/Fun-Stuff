@@ -1,0 +1,33 @@
+{
+  "n_jobs": 2,
+  "use_offline_schedule": true,
+  "use_offline_data": false,
+  "refresh_matchups": 1,
+  "timeout": 8,
+  "main_github": "klicogogo",
+  "main_repo": "Fantasy-Fun-Stuff",
+  "matchup_stats": {
+    "github": "klicogogo",
+    "repo_name": "Fantasy-Fun-Stuff",
+    "dir_name": "reports",
+    "branch": "master",
+    "ssh_key": "id_rsa_klicogogo",
+    "google_analytics_key": "G-6N4SMS2DV4"
+  },
+  "analytics": {
+    "github": "andrei1809",
+    "repo_name": "802605926091",
+    "dir_name": "analytics",
+    "branch": "main",
+    "ssh_key": "id_rsa_1809",
+    "google_analytics_key": "G-1WZ73TVEM3"
+  },
+  "active_stats": {
+    "github": "klic69",
+    "repo_name": "6523959q7q1958629",
+    "dir_name": "active_stats",
+    "branch": "main",
+    "ssh_key": "id_rsa_69",
+    "google_analytics_key": "G-Y4G5VRJNC6"
+  }
+}
