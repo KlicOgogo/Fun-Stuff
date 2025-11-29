@@ -10,14 +10,13 @@ import traceback
 
 import active_stats
 import categories
+import globals
 import points
 import utils.common
 import utils.data
-import utils.globals
 
 
-def _process_leagues(leagues, sports_list, old_data_loaded_matchups, browser):
-    config = utils.globals.config()
+def _process_leagues(global_config, leagues, sports_list, old_data_loaded_matchups, browser):
     league_names = defaultdict(dict)
     data_loaded_matchups = defaultdict(dict)
 
@@ -29,7 +28,7 @@ def _process_leagues(leagues, sports_list, old_data_loaded_matchups, browser):
                 continue
 
             schedule = None
-            use_offline_schedule = config['use_offline_schedule']
+            use_offline_schedule = global_config['use_offline_schedule']
             for league in league_settings['leagues'].split(','):
                 current_schedule = utils.data.schedule(
                     league, sports, league_settings['is_playoffs_support'], use_offline_schedule, browser)
@@ -51,13 +50,13 @@ def _process_leagues(leagues, sports_list, old_data_loaded_matchups, browser):
             league_loaded_matchups = old_data_loaded_matchups[sports].get(main_league, [])
             matchup_str = str(matchup)
             is_data_loaded = matchup_str in league_loaded_matchups
-            use_offline_data = config['use_offline_data'] or is_data_loaded
+            use_offline_data = global_config['use_offline_data'] or is_data_loaded
             online_page_matchups = []
             if is_full_support and not use_offline_data:
                 if is_season_ended:
                     online_page_matchups = [matchup]
                 else:
-                    online_range_left = max(1, matchup - config['refresh_matchups'])
+                    online_range_left = max(1, matchup - global_config['refresh_matchups'])
                     online_page_matchups = list(range(online_range_left, matchup + 1))
 
             scoreboard_data = {}
@@ -68,7 +67,7 @@ def _process_leagues(leagues, sports_list, old_data_loaded_matchups, browser):
             
             matchups_to_process = [matchup]
             if is_full_support:
-                process_range_left = max(1, matchup - config['refresh_matchups'])
+                process_range_left = max(1, matchup - global_config['refresh_matchups'])
                 matchups_to_process = list(range(process_range_left, matchup + 1))
 
             box_scores_data = None
@@ -91,7 +90,7 @@ def _process_leagues(leagues, sports_list, old_data_loaded_matchups, browser):
             export_reports_function = functions_by_type[type_item]
             for m in matchups_to_process:
                 export_reports_function(
-                    league_settings, schedule, m, scoreboard_data, box_scores_data, config['n_last_matchups'])
+                    league_settings, schedule, m, scoreboard_data, box_scores_data, global_config['n_last_matchups'])
             
             data_loaded_matchups[sports][main_league] = league_loaded_matchups
             if not is_data_loaded:
@@ -129,6 +128,15 @@ def _split_for_parallel(index_config, league_types, league_sizes, count):
 
 
 def main():
+    # Load globals from files to avoid race condition
+    globals.category_names()
+    globals.config
+    globals.descriptions()
+    globals.league_names()
+    globals.titles()
+    globals.data_loaded_matchups()
+    
+    global_config = globals.config()
     sports_list = ['basketball', 'hockey']
     types_list = ['categories', 'points']
     for arg in sys.argv[1:]:
@@ -150,28 +158,30 @@ def main():
             index_types.extend([type_item] * len(leagues))
             index_sizes.extend([l['leagues'].count(',') + 1 for l in leagues])
 
-    n_jobs = utils.globals.config()['n_jobs']
-    sleep_timeout = utils.globals.config()['timeout']
+    n_jobs = global_config['n_jobs']
+    sleep_timeout = global_config['timeout']
     settings_splitted = _split_for_parallel(index_config, index_types, index_sizes, n_jobs)
 
-    data_loaded_matchups = utils.globals.data_loaded_matchups()
-    league_names = utils.globals.league_names()
+    data_loaded_matchups = globals.data_loaded_matchups()
+    league_names = globals.league_names()
 
     if n_jobs == 1:
         names_and_matchups = _process_leagues(
-            settings_splitted[0], sports_list, data_loaded_matchups, utils.data.BrowserManager(50, sleep_timeout))
+            global_config, settings_splitted[0], sports_list,
+            data_loaded_matchups, utils.data.BrowserManager(50, sleep_timeout))
         for sports in sports_list:
             league_names[sports].update(names_and_matchups['league_names'][sports])
             data_loaded_matchups[sports].update(names_and_matchups['data_loaded_matchups'][sports])
         
-        utils.globals.save_data_loaded_matchups()
-        utils.globals.save_league_names()
+        globals.save_data_loaded_matchups()
+        globals.save_league_names()
         
         if 'error' in names_and_matchups:
             raise names_and_matchups[e]
     else:
         pool = ThreadPool(n_jobs)
         process_params = zip(
+            itertools.repeat(global_config),
             settings_splitted,
             itertools.repeat(sports_list),
             itertools.repeat(data_loaded_matchups),
@@ -188,19 +198,19 @@ def main():
                 if 'error' in names_and_matchups:
                     error = names_and_matchups['error']
 
-        utils.globals.save_data_loaded_matchups()
-        utils.globals.save_league_names()
+        globals.save_data_loaded_matchups()
+        globals.save_league_names()
 
         if error is not None:
             raise error
 
-    utils.common.save_index(utils.globals.REPORT_TYPES, utils.globals.config(), index_config, league_names, is_archive=True)
-    utils.common.save_index(utils.globals.REPORT_TYPES, utils.globals.config(), index_config, league_names, is_archive=False)
-    utils.common.save_reports_type_indexes(utils.globals.REPORT_TYPES, utils.globals.config(), league_names)
+    report_types = global_config["report_types"]
+    utils.common.save_index(report_types, global_config, index_config, league_names, is_archive=True)
+    utils.common.save_index(report_types, global_config, index_config, league_names, is_archive=False)
+    utils.common.save_reports_type_indexes(report_types, global_config, league_names)
 
 if __name__ == '__main__':
     try:
-        utils.globals.init_globals()
         main()
     except Exception as e:
         traceback.print_exc()

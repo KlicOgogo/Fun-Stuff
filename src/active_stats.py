@@ -1,8 +1,8 @@
 from collections import defaultdict
 
+import globals
 import table.active_stats
 import utils.common
-import utils.globals
 
 
 _basketball_summarizable_cols = [
@@ -48,7 +48,7 @@ _summarizable_cols = {
 
 def _export_league_tables(sports, matchup, league_active_stats):
     players_groups = ['skaters', 'goalies'] if sports == 'hockey' else ['players']
-    desc = utils.globals.descriptions()
+    descriptions = globals.descriptions()
 
     data_by_team = defaultdict(lambda: defaultdict(list))
     categories_info = defaultdict(dict)
@@ -73,7 +73,7 @@ def _export_league_tables(sports, matchup, league_active_stats):
             team_stats_summarized = _summarize(team_stats_list, sports)
             team_categories = categories_info[team_name][group]
             if team_stats_summarized:
-                tables.append([f'{team_name}: {group}', desc['active_stats'],
+                tables.append([f'{team_name}: {group}', descriptions['active_stats'],
                     table.active_stats.matchup(team_stats_summarized, team_categories)])
     
     return tables
@@ -129,6 +129,6 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, active_s
         link = f'https://fantasy.espn.com/{sports}/league?leagueId={league_id}'
         leagues_tables.append([league_name, link, tables])
 
-    global_config = utils.globals.config()
+    global_config = globals.config()
     utils.common.save_tables(
         sports, leagues_tables, [], leagues[0], leagues_names[0], matchup, schedule, global_config, 'active_stats')

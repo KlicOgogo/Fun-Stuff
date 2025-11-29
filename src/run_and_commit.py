@@ -7,8 +7,8 @@ import traceback
 import git
 from telegram import Bot
 
+import globals
 import index
-import utils.globals
 
 
 _repo_root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
@@ -33,12 +33,13 @@ def _send_bot_message(text, is_debug, is_delayed):
 
 def main():
     _send_bot_message('\U0001f608 Chef is cooking', True, False)
-    config = utils.globals.config()
+    global_config = globals.config()
+    report_types = global_config["report_types"]
 
-    for report_type in utils.globals.REPORT_TYPES:
-        repo = config[report_type]['repo_name']
-        branch = config[report_type]['branch']
-        ssh_key = config[report_type]['ssh_key']
+    for report_type in report_types:
+        repo = global_config[report_type]['repo_name']
+        branch = global_config[report_type]['branch']
+        ssh_key = global_config[report_type]['ssh_key']
 
         repo_path = os.path.join(_repo_root_dir, '..', repo)
         git_repo = git.Repo.init(repo_path)
@@ -49,10 +50,10 @@ def main():
 
     index.main()
 
-    for report_type in utils.globals.REPORT_TYPES:
-        repo = config[report_type]['repo_name']
-        branch = config[report_type]['branch']
-        ssh_key = config[report_type]['ssh_key']
+    for report_type in report_types:
+        repo = global_config[report_type]['repo_name']
+        branch = global_config[report_type]['branch']
+        ssh_key = global_config[report_type]['ssh_key']
 
         repo_path = os.path.join(_repo_root_dir, '..', repo)
         git_repo = git.Repo.init(repo_path)

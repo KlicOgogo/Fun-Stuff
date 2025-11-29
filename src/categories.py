@@ -2,13 +2,13 @@ from collections import defaultdict, Counter
 
 import numpy as np
 
+import globals
 import table.analytics
 import table.categories
 import table.common
 import utils.categories
 import utils.common
 import utils.data
-import utils.globals
 
 
 _gk_category_lowers = {'GAA': np.inf, 'SV%': -np.inf, 'GA': np.inf}
@@ -81,8 +81,8 @@ def _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data
             league, league_settings, schedule, matchup, category_pairs, box_scores_data
         )
             
-        titles = utils.globals.titles()
-        desc = utils.globals.descriptions()
+        titles = globals.titles()
+        desc = globals.descriptions()
         tables = []
         tables.append([titles['category_win_stats'], desc['category_win_stats'],
             table.analytics.win_stats_by_each_category(each_category_win_stats, categories)])
@@ -106,7 +106,7 @@ def _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data
             table.analytics.power_predictions_h2h(each_category_places)])
 
         for cat in categories:
-            category_name = utils.globals.category_names()[cat]
+            category_name = globals.category_names()[cat]
             places = each_category_places[cat]
             tables.append([
                 titles['category_places'].format(category_name),
@@ -128,8 +128,8 @@ def _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data
 
 def _export_overall_tables(matchup, categories, plays, scores, stats_pairs, league_settings, n_last):
     tiebreaker = league_settings['tiebreaker']
-    titles = utils.globals.titles()
-    desc = utils.globals.descriptions()
+    titles = globals.titles()
+    desc = globals.descriptions()
     
     overall_tables = []
     plays_data = None
@@ -210,8 +210,8 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
         exp_data = expected_info[0] if is_each_category else expected_info[1]
 
         tables = []
-        titles = utils.globals.titles()
-        desc = utils.globals.descriptions()
+        titles = globals.titles()
+        desc = globals.descriptions()
         tables.append([titles['matchup'], desc['matchup'],
             table.categories.matchup(
                 categories, stats, scores_data, plays_data, places_data, comparisons, exp_data,
@@ -333,7 +333,7 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
     if len(leagues) > 1:
         overall_tables = _export_overall_tables(matchup, categories, overall_plays,
             overall_scores, overall_stats_pairs, league_settings)
-    global_config = utils.globals.config()
+    global_config = globals.config()
     utils.common.save_tables(
         sports, leagues_tables, overall_tables, leagues[0], leagues_names[0],
         matchup, schedule, global_config, 'matchup_stats')

@@ -3,7 +3,7 @@ import json
 import os
 
 
-_repo_root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
+_repo_root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 _config = {}
 _league_names_path = os.path.join(_repo_root_dir, 'res/league_names.json')
 _league_names = defaultdict(dict)
@@ -12,17 +12,6 @@ _descriptions = {}
 _category_names = {}
 _data_loaded_matchups_path = os.path.join(_repo_root_dir, 'res/data_loaded_matchups.config')
 _data_loaded_matchups = defaultdict(dict)
-
-REPORT_TYPES = ('matchup_stats', 'analytics', 'active_stats')
-
-
-def init_globals():
-    category_names()
-    config()
-    descriptions()
-    league_names()
-    titles()
-    data_loaded_matchups()
 
 
 def category_names():

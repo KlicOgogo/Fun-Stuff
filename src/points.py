@@ -2,11 +2,11 @@ from collections import defaultdict, Counter
 
 import numpy as np
 
+import globals
 import table.common
 import table.points
 import utils.common
 import utils.data
-import utils.globals
 import utils.points
 
 
@@ -34,8 +34,8 @@ def _export_league_tables(sports, matchup, scores, scores_pairs, plays, plays_pl
             opp_luck[team].append(matchup_luck[opp_dict[team]])
     
     matchups = np.arange(1, matchup + 1)
-    titles = utils.globals.titles()
-    desc = utils.globals.descriptions()
+    titles = globals.titles()
+    desc = globals.descriptions()
     tables.append([titles['scores'], desc['scores'], table.common.scores(scores, matchups, False, n_last)])
     tables.append([titles['scores_opp'], desc['scores_opp'], table.common.scores(opp_scores, matchups, True, n_last)])
     tables.append([titles['luck'], desc['luck'], table.points.luck_score(luck, matchups, False, n_last)])
@@ -87,8 +87,8 @@ def _export_league_tables(sports, matchup, scores, scores_pairs, plays, plays_pl
 
 def _export_overall_tables(n_leagues, matchup, overall_scores, n_last):
     overall_tables = []
-    titles = utils.globals.titles()
-    descriptions = utils.globals.descriptions()
+    titles = globals.titles()
+    descriptions = globals.descriptions()
     if n_leagues > 1:
         overall_places = defaultdict(list)
         for i in range(matchup):
@@ -168,7 +168,7 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
         leagues_tables.append([league_name, link, tables])
 
     overall_tables = _export_overall_tables(len(leagues), matchup, overall_scores, n_last)
-    global_config = utils.globals.config()
+    global_config = globals.config()
     utils.common.save_tables(
         sports, leagues_tables, overall_tables, leagues[0], leagues_names[0],
         matchup, schedule, global_config, 'matchup_stats')
