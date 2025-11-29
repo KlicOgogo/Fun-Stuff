@@ -5,8 +5,6 @@ import numpy as np
 import pandas as pd
 
 from table import common, style
-from utils.globals import N_RECENT_MATCHUPS
-import utils.table
 
 
 def category_power(places_by_categories, categories, n_last=None):
@@ -29,7 +27,7 @@ def category_power(places_by_categories, categories, n_last=None):
                       columns=categories + ['&#128526;', '&#128527;', '&#128556;', '&#128532;', '&#128557;'])
     df = df_teams.merge(df, how='outer', left_index=True, right_index=True)
     df = df.iloc[np.lexsort((-df['&#128532;'], -df['&#128556;'], -df['&#128527;'], -df['&#128526;']))]
-    df = utils.table.add_position_column(df)
+    df = common.add_position_column(df)
     styler = df.style.format('{:g}', subset=categories).\
         set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
         apply(style.category_power, subset=categories)
@@ -56,13 +54,13 @@ def category_rankings(places_by_categories, categories):
     return styler.to_html()
 
 
-def h2h_category_record(places_by_categories, categories, my_team_key):
+def h2h_category_record(places_by_categories, categories, my_team_key, n_last):
     df_data = defaultdict(list)
     h2h_records = defaultdict(list)
     recent_h2h_records = defaultdict(list)
     for category in places_by_categories:
         my_team_places = np.array(places_by_categories[category][my_team_key])
-        recent_my_team_places = np.array(places_by_categories[category][my_team_key][-N_RECENT_MATCHUPS:])
+        recent_my_team_places = np.array(places_by_categories[category][my_team_key][-n_last:])
         for team in places_by_categories[category]:
             if team == my_team_key:
                 continue
@@ -75,7 +73,7 @@ def h2h_category_record(places_by_categories, categories, my_team_key):
             df_data[team].append(f'{wins}-{losses}-{draws}')
             h2h_records[team].append([wins, losses, draws])
 
-            recent_opponent_places = np.array(places_by_categories[category][team][-N_RECENT_MATCHUPS:])
+            recent_opponent_places = np.array(places_by_categories[category][team][-n_last:])
             recent_wins = (recent_my_team_places < recent_opponent_places).sum()
             recent_losses = (recent_my_team_places > recent_opponent_places).sum()
             recent_draws = (recent_my_team_places == recent_opponent_places).sum()
@@ -90,13 +88,13 @@ def h2h_category_record(places_by_categories, categories, my_team_key):
         df_data[team].append(np.round(team_recent_power / np.sum(team_recent_summary), 2))
         df_data[team].append(np.round(team_power / np.sum(team_summary), 2))
 
-    percentage_cols = [f'L{N_RECENT_MATCHUPS}%', '%']
+    percentage_cols = [f'L{n_last}%', '%']
     df_teams = pd.DataFrame(list(map(itemgetter(0), df_data.keys())), index=df_data.keys(), columns=['Team'])
     df_stats = pd.DataFrame(
         list(df_data.values()), index=df_data.keys(), columns=[*categories, 'W  ', 'L', 'D', *percentage_cols])
     df = df_teams.merge(df_stats, how='outer', left_index=True, right_index=True)
-    df = df.iloc[np.lexsort((-df['W  '], -df[f'L{N_RECENT_MATCHUPS}%'], -df['%']))]
-    df = utils.table.add_position_column(df)
+    df = df.iloc[np.lexsort((-df['W  '], -df[f'L{n_last}%'], -df['%']))]
+    df = common.add_position_column(df)
     styler = df.style.format('{:g}', subset=percentage_cols).\
         set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
         map(style.percentage, subset=percentage_cols)
@@ -135,7 +133,7 @@ def power_predictions(places_by_categories, my_team_key, matchups):
     df_stats = pd.DataFrame(list(df_data.values()), index=df_data.keys(), columns=[*matchups, 'W  ', 'L', 'D', '%'])
     df = df_teams.merge(df_stats, how='outer', left_index=True, right_index=True)
     df = df.iloc[np.lexsort((-df['W  '], -df['%']))]
-    df = utils.table.add_position_column(df)
+    df = common.add_position_column(df)
     styler = df.style.format({'%': '{:g}'}).set_table_styles(style.STYLES).set_table_attributes(style.ATTRS).hide().\
         map(style.percentage, subset=['%'])
     return styler.to_html()
@@ -179,7 +177,7 @@ def win_stats_by_each_category(win_stats_each_category, categories, n_last=None)
                       columns=categories + ['&#128526;', '&#128527;', '&#128556;', '&#128532;', '&#128557;'])
     df = df_teams.merge(df, how='outer', left_index=True, right_index=True)
     df = df.iloc[np.lexsort((-df['&#128532;'], -df['&#128556;'], -df['&#128527;'], -df['&#128526;']))]
-    df = utils.table.add_position_column(df)
+    df = common.add_position_column(df)
     styler = df.style.format('{:g}', subset=categories).\
         set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
         apply(style.each_category_win_stat, subset=categories)

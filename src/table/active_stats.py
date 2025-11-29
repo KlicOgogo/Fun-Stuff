@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from table import style
-import utils.table
+from table.common import add_position_column
 
 EPSILON = 0.00000000001
 
@@ -68,7 +68,7 @@ def matchup(players_stats, categories_data):
     sort_cols = [col for col in all_sort_cols if col in category_columns]
     sort_indexes = np.lexsort([df[col] * -1.0 for col in sort_cols])
     df = df.iloc[sort_indexes]
-    df = utils.table.add_position_column(df)
+    df = add_position_column(df)
     styler = df.style.format('{:g}', subset=list(set(category_columns) - {'ATOI', ' ', '  '})).\
         set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide()
     return styler.to_html()

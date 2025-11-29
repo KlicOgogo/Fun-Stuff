@@ -36,12 +36,14 @@ def _export_league_tables(sports, matchup, scores, scores_pairs, plays, plays_pl
     matchups = np.arange(1, matchup + 1)
     titles = utils.globals.titles()
     desc = utils.globals.descriptions()
-    tables.append([titles['scores'], desc['scores'], table.common.scores(scores, matchups, False)])
-    tables.append([titles['scores_opp'], desc['scores_opp'], table.common.scores(opp_scores, matchups, True)])
-    tables.append([titles['luck'], desc['luck'], table.points.luck_score(luck, matchups, False)])
-    tables.append([titles['luck_opp'], desc['luck_opp'], table.points.luck_score(opp_luck, matchups, True)])
-    tables.append([titles['places'], desc['places'], table.common.places(places, matchups, False, False)])
-    tables.append([titles['places_opp'], desc['places_opp'], table.common.places(opp_places, matchups, True, False)])
+    n_last = utils.globals.N_RECENT_MATCHUPS
+    tables.append([titles['scores'], desc['scores'], table.common.scores(scores, matchups, False, n_last)])
+    tables.append([titles['scores_opp'], desc['scores_opp'], table.common.scores(opp_scores, matchups, True, n_last)])
+    tables.append([titles['luck'], desc['luck'], table.points.luck_score(luck, matchups, False, n_last)])
+    tables.append([titles['luck_opp'], desc['luck_opp'], table.points.luck_score(opp_luck, matchups, True, n_last)])
+    tables.append([titles['places'], desc['places'], table.common.places(places, matchups, False, False, n_last)])
+    tables.append([titles['places_opp'], desc['places_opp'],
+        table.common.places(opp_places, matchups, True, False, n_last)])
     
     pairwise_h2h = defaultdict(lambda: defaultdict(Counter))
     for team in scores:
@@ -60,9 +62,9 @@ def _export_league_tables(sports, matchup, scores, scores_pairs, plays, plays_pl
 
     table_key_dict = {'basketball': 'minutes', 'hockey': 'games'}
     table_key = table_key_dict[sports]
-    tables.append([titles[table_key], desc[table_key], table.common.scores(plays, matchups, False)])
+    tables.append([titles[table_key], desc[table_key], table.common.scores(plays, matchups, False, n_last)])
     tables.append([titles[f'{table_key}_places'], desc[f'{table_key}_places'],
-        table.common.places(plays_places, matchups, False, False)])
+        table.common.places(plays_places, matchups, False, False, n_last)])
 
     mean_scores = {}
     row_multiplier_dict = {'basketball': 100, 'hockey': 1}
@@ -70,7 +72,7 @@ def _export_league_tables(sports, matchup, scores, scores_pairs, plays, plays_pl
         scores_row = np.array(scores[team])
         plays_row = np.array(plays[team])
         mean_scores[team] = list(np.round(scores_row / plays_row * row_multiplier_dict[sports], 2))
-    tables.append([titles['mean'], desc['mean'], table.common.scores(mean_scores, matchups, False)])
+    tables.append([titles['mean'], desc['mean'], table.common.scores(mean_scores, matchups, False, n_last)])
 
     mean_scores_places = defaultdict(list)
     for m in range(matchup):
@@ -79,7 +81,7 @@ def _export_league_tables(sports, matchup, scores, scores_pairs, plays, plays_pl
         for team, value in matchup_places.items():
             mean_scores_places[team].append(value)
     tables.append([titles['mean_places'], desc['mean_places'],
-        table.common.places(mean_scores_places, matchups, False, False)])
+        table.common.places(mean_scores_places, matchups, False, False, n_last)])
 
     return tables
 
@@ -88,6 +90,7 @@ def _export_overall_tables(n_leagues, matchup, overall_scores):
     overall_tables = []
     titles = utils.globals.titles()
     descriptions = utils.globals.descriptions()
+    n_last = utils.globals.N_RECENT_MATCHUPS
     if n_leagues > 1:
         overall_places = defaultdict(list)
         for i in range(matchup):
@@ -96,7 +99,7 @@ def _export_overall_tables(n_leagues, matchup, overall_scores):
             for team in matchup_overall_places:
                 overall_places[team].append(matchup_overall_places[team])
         overall_tables.append([titles['places_overall'], descriptions['places_overall'],
-            table.common.places(overall_places, np.arange(1, matchup + 1), False, True)])
+            table.common.places(overall_places, np.arange(1, matchup + 1), False, True, n_last)])
 
     n_top = int(len(overall_scores) / n_leagues)
     top_common_cols = ['Team', 'Score', 'League']

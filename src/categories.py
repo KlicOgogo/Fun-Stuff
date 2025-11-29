@@ -111,15 +111,15 @@ def _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data
             tables.append([
                 titles['category_places'].format(category_name),
                 desc['category_places'].format(category_name),
-                table.common.places(places, matchups, False, False)
+                table.common.places(places, matchups, False, False, N_RECENT_MATCHUPS)
             ])
 
         for team_id, team_name in sorted(team_names.items()):
-            current_team_key = (team_name, team_id, league_name, league)
+            team_key = (team_name, team_id, league_name, league)
             tables.append([titles['team_category_record'].format(team_name), desc['team_category_record'],
-                table.analytics.h2h_category_record(each_category_places, categories, current_team_key)])
+                table.analytics.h2h_category_record(each_category_places, categories, team_key, N_RECENT_MATCHUPS)])
             tables.append([titles['result_expectation'].format(team_name), desc['result_expectation'],
-                table.analytics.power_predictions(each_category_places, current_team_key, matchups)])
+                table.analytics.power_predictions(each_category_places, team_key, matchups)])
 
         league_link = f'https://fantasy.espn.com/{sports}/league?leagueId={league}'
         analytics_tables.append([league_name, league_link, tables])
@@ -143,7 +143,9 @@ def _export_overall_tables(matchup, categories, plays, scores, stats_pairs, leag
     expected_info = utils.categories.get_expected_score_and_result(stats, opp_dict, categories, tiebreaker)
     expected_data = expected_info[0] if league_settings['is_each_category'] else expected_info[1]
     overall_tables.append([titles['matchup_overall'], desc['matchup_overall'],
-        table.categories.matchup(categories, stats, scores, plays_data, places_data, comparisons, expected_data)])
+        table.categories.matchup(
+            categories, stats, scores, plays_data, places_data, comparisons, expected_data,
+            N_RECENT_MATCHUPS, utils.categories.LESS_TO_WIN_CATEGORIES)])
 
     places = defaultdict(list)
     for m in range(matchup):
@@ -152,7 +154,7 @@ def _export_overall_tables(matchup, categories, plays, scores, stats_pairs, leag
         for team in places_sum_places:
             places[team].append(places_sum_places[team])
     overall_tables.append([titles['places_overall'], desc['places_overall'],
-        table.common.places(places, np.arange(1, matchup + 1), False, True)])
+        table.common.places(places, np.arange(1, matchup + 1), False, True, N_RECENT_MATCHUPS)])
     return overall_tables
 
 
@@ -207,7 +209,9 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
         titles = utils.globals.titles()
         desc = utils.globals.descriptions()
         tables.append([titles['matchup'], desc['matchup'],
-            table.categories.matchup(categories, stats, scores_data, plays_data, places_data, comparisons, exp_data)])
+            table.categories.matchup(
+                categories, stats, scores_data, plays_data, places_data, comparisons, exp_data,
+                N_RECENT_MATCHUPS, utils.categories.LESS_TO_WIN_CATEGORIES)])
 
         places = defaultdict(list)
         opp_places = defaultdict(list)
@@ -262,14 +266,17 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
                         comparisons_h2h[team][opp][h2h_res] += 1
 
         matchups = np.arange(1, matchup + 1)
-        tables.append([titles['places'], desc['places'], table.common.places(places, matchups, False, False)])
+        tables.append([titles['places'], desc['places'],
+            table.common.places(places, matchups, False, False, N_RECENT_MATCHUPS)])
         tables.append([titles['places_opp'], desc['places_opp'],
-            table.common.places(opp_places, matchups, True, False)])
+            table.common.places(opp_places, matchups, True, False, N_RECENT_MATCHUPS)])
 
         tables.append([titles['pairwise_matchup'], desc['pairwise_matchup'],
-            table.categories.comparisons(comparisons, matchups, False)])
+            table.categories.comparisons(
+                comparisons, matchups, False, N_RECENT_MATCHUPS, utils.categories.LESS_TO_WIN_CATEGORIES)])
         tables.append([titles['pairwise_matchup_opp'], desc['pairwise_matchup_opp'],
-            table.categories.comparisons(opp_comparisons, matchups, True)])
+            table.categories.comparisons(
+                opp_comparisons, matchups, True, N_RECENT_MATCHUPS, utils.categories.LESS_TO_WIN_CATEGORIES)])
         tables.append([titles['pairwise_h2h'], desc['pairwise_h2h'], table.common.h2h(comparisons_h2h)])
         if is_each_category:
             each_category_stats = {}
@@ -282,7 +289,8 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
                             each_category_stats[sc[i][0]] += np.array(list(map(float, sc[i][1].split('-'))))
             table_stats = (each_category_stats, expected_each_category_stats)
             tables.append([titles['expected_cat'], desc['expected_cat'],
-                table.categories.expected_each_category_stats(*table_stats, matchup)])
+                table.categories.expected_each_category_stats(
+                    *table_stats, matchup, N_RECENT_MATCHUPS, utils.categories.LESS_TO_WIN_CATEGORIES)])
         else:
             tables.append([titles['expected_win'], desc['expected_win'],
                 table.categories.expected_win_stats(win_record, expected_win_record, matchups)])
@@ -305,9 +313,10 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
             if has_plays:
                 key_dict = {'basketball': 'minutes', 'hockey': 'games'}
                 table_key = key_dict[sports]
-                tables.append([titles[table_key], desc[table_key], table.common.scores(plays, matchups, False)])
+                tables.append([titles[table_key], desc[table_key],
+                    table.common.scores(plays, matchups, False, N_RECENT_MATCHUPS)])
                 tables.append([titles[f'{table_key}_places'], desc[f'{table_key}_places'],
-                    table.common.places(plays_places, matchups, False, False)])
+                    table.common.places(plays_places, matchups, False, False, N_RECENT_MATCHUPS)])
 
         league_link = f'https://fantasy.espn.com/{sports}/league?leagueId={league}'
         leagues_tables.append([league_name, league_link, tables])

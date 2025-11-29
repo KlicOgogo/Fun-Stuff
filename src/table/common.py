@@ -6,8 +6,13 @@ import numpy as np
 import pandas as pd
 
 from table import flag, style
-from utils.globals import N_RECENT_MATCHUPS
-import utils.table
+
+
+def add_position_column(df):
+    position = {index: i + 1 for i, index in enumerate(df.index)}
+    df_position = pd.DataFrame(list(position.values()), index=position.keys(), columns=['Pos'])
+    result_df = df_position.merge(df, how='inner', left_index=True, right_index=True)
+    return result_df
 
 
 def h2h(h2h_comparisons):
@@ -39,13 +44,13 @@ def h2h(h2h_comparisons):
         df_data.append(team_data)
 
     df = pd.DataFrame(df_data, columns=['Team', *np.arange(1, len(df_data)+1), 'W  ', 'L', 'D', '%'])
-    df = utils.table.add_position_column(df)
+    df = add_position_column(df)
     styler = df.style.format({'%': '{:g}'}).set_table_styles(style.STYLES).set_table_attributes(style.ATTRS).hide().\
         map(style.percentage, subset=['%'])
     return styler.to_html()
 
 
-def places(places_data, matchups, opp_flag, is_overall):
+def places(places_data, matchups, opp_flag, is_overall, n_last):
     df_data = copy.deepcopy(places_data)
     for team in df_data:
         n_top = np.sum(flag.top_place(np.array(df_data[team]), df_data))
@@ -54,26 +59,26 @@ def places(places_data, matchups, opp_flag, is_overall):
         df_data[team].append(n_top if opp_flag else n_bottom)
         df_data[team].append(n_bottom if opp_flag else n_top)
 
-        df_data[team].append(np.sum(places_data[team][-N_RECENT_MATCHUPS:]))
+        df_data[team].append(np.sum(places_data[team][-n_last:]))
         df_data[team].append(np.sum(places_data[team]))
         
     df_teams = pd.DataFrame(list(map(itemgetter(2, 0) if is_overall else itemgetter(0), df_data.keys())),
                             index=df_data.keys(), columns=['League', 'Team'] if is_overall else ['Team'])
-    recent_col = f'Last{N_RECENT_MATCHUPS}'
+    recent_col = f'Last{n_last}'
     cols = [*matchups, '&#128532;', '&#128526;', recent_col, 'SUM']
     df = pd.DataFrame(list(df_data.values()), index=df_data.keys(), columns=cols)
     df = df_teams.merge(df, how='outer', left_index=True, right_index=True)
     sort_cols = ['&#128526;', '&#128532;', recent_col, 'SUM'] if opp_flag else ['&#128532;', '&#128526;', recent_col, 'SUM']
     sort_indexes = np.lexsort([df[col] * coeff for col, coeff in zip(sort_cols, [1.0, -1.0, 1.0, 1.0])])
     df = df.iloc[sort_indexes]
-    df = utils.table.add_position_column(df)
+    df = add_position_column(df)
     styler = df.style.format({c: '{:g}' for c in set(cols) - {'Team'}}).\
         set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
         apply(style.opponent_place if opp_flag else style.place, subset=matchups)
     return styler.to_html()
 
 
-def scores(scores_data, matchups, opp_flag):
+def scores(scores_data, matchups, opp_flag, n_last):
     df_data = copy.deepcopy(scores_data)
     flags = [flag.top_score, flag.half_top_score, flag.half_bottom_score, flag.bottom_score]
     flags = list(reversed(flags)) if opp_flag else flags
@@ -87,19 +92,19 @@ def scores(scores_data, matchups, opp_flag):
         for count_array in counts:
             df_data[team].append(count_array[index])
 
-        df_data[team].append(np.sum(scores_data[team][-N_RECENT_MATCHUPS:]))
+        df_data[team].append(np.sum(scores_data[team][-n_last:]))
         df_data[team].append(np.sum(scores_data[team]))
         
     df_teams = pd.DataFrame(list(map(itemgetter(0), df_data.keys())), index=df_data.keys(), columns=['Team'])
     emoji_cols = ['&#128526;', '&#128527;', '&#128532;', '&#128557;']
-    recent_col = f'Last{N_RECENT_MATCHUPS}'
+    recent_col = f'Last{n_last}'
     cols = [*matchups, *emoji_cols, recent_col, 'SUM']
     df = pd.DataFrame(list(df_data.values()), index=df_data.keys(), columns=cols)
     df = df_teams.merge(df, how='outer', left_index=True, right_index=True)
     sort_cols = [*emoji_cols, recent_col, 'SUM'] if opp_flag else [*reversed(emoji_cols), recent_col, 'SUM']
     sort_indexes = np.lexsort([df[col] * coeff for col, coeff in zip(sort_cols, [1.0, 1.0, -1.0, -1.0, -1.0, -1.0])])
     df = df.iloc[sort_indexes]
-    df = utils.table.add_position_column(df)
+    df = add_position_column(df)
     styler = df.style.format({c: '{:g}' for c in set(cols) - {'Team'}}).\
         set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
         apply(style.opponent_score if opp_flag else style.score, subset=matchups)
