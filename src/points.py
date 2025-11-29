@@ -168,6 +168,8 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
         leagues_tables.append([league_name, link, tables])
 
     overall_tables = _export_overall_tables(len(leagues), matchup, overall_scores, n_last)
+    global_config = utils.globals.config()
     utils.common.save_tables(
-        sports, leagues_tables, overall_tables, leagues[0], leagues_names[0], matchup, schedule, 'matchup_stats')
-    utils.common.save_league_index(leagues_names[0], league_settings)
+        sports, leagues_tables, overall_tables, leagues[0], leagues_names[0],
+        matchup, schedule, global_config, 'matchup_stats')
+    utils.common.save_league_index(leagues_names[0], league_settings, global_config)

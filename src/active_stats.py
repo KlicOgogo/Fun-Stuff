@@ -129,5 +129,6 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, active_s
         link = f'https://fantasy.espn.com/{sports}/league?leagueId={league_id}'
         leagues_tables.append([league_name, link, tables])
 
+    global_config = utils.globals.config()
     utils.common.save_tables(
-        sports, leagues_tables, [], leagues[0], leagues_names[0], matchup, schedule, 'active_stats')
+        sports, leagues_tables, [], leagues[0], leagues_names[0], matchup, schedule, global_config, 'active_stats')

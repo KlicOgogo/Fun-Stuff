@@ -333,8 +333,10 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
     if len(leagues) > 1:
         overall_tables = _export_overall_tables(matchup, categories, overall_plays,
             overall_scores, overall_stats_pairs, league_settings)
+    global_config = utils.globals.config()
     utils.common.save_tables(
-        sports, leagues_tables, overall_tables, leagues[0], leagues_names[0], matchup, schedule, 'matchup_stats')
+        sports, leagues_tables, overall_tables, leagues[0], leagues_names[0],
+        matchup, schedule, global_config, 'matchup_stats')
     utils.common.save_tables(
-        sports, analytics_tables, [], leagues[0], leagues_names[0], matchup, schedule, 'analytics')
-    utils.common.save_league_index(leagues_names[0], league_settings)
+        sports, analytics_tables, [], leagues[0], leagues_names[0], matchup, schedule, global_config, 'analytics')
+    utils.common.save_league_index(leagues_names[0], league_settings, global_config)

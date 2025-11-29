@@ -8,8 +8,6 @@ import re
 from jinja2 import Template
 import numpy as np
 
-from utils.globals import config
-
 
 _repo_root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
 _reports_key_to_description = {
@@ -92,14 +90,14 @@ def get_places(scores_dict, reverse):
     return places
 
 
-def save_index(report_types, index_config, league_names, is_archive):
+def save_index(report_types, global_config, index_config, league_names, is_archive):
     sports_indexes = defaultdict(lambda: defaultdict(list))
     if is_archive:
         for sports in _sports_keys:
             for report_type in report_types:
-                github = config()[report_type]['github']
-                reports_repo_name = config()[report_type]['repo_name']
-                reports_dir_name = config()[report_type]['dir_name']
+                github = global_config[report_type]['github']
+                reports_repo_name = global_config[report_type]['repo_name']
+                reports_dir_name = global_config[report_type]['dir_name']
                 reports_dir = os.path.join(_repo_root_dir, '..', reports_repo_name, reports_dir_name)
                 index_url_prefix = f'https://{github}.github.io/{reports_repo_name}/{reports_dir_name}/{sports}'
                 sports_reports_dir = os.path.join(reports_dir, sports)
@@ -123,9 +121,9 @@ def save_index(report_types, index_config, league_names, is_archive):
             sports = league_settings['sports']
             
             for report_type in report_types:
-                github = config()[report_type]['github']
-                reports_repo_name = config()[report_type]['repo_name']
-                reports_dir_name = config()[report_type]['dir_name']
+                github = global_config[report_type]['github']
+                reports_repo_name = global_config[report_type]['repo_name']
+                reports_dir_name = global_config[report_type]['dir_name']
 
                 season_relative_path = os.path.join(reports_repo_name, reports_dir_name, sports, league_id, season_str)
                 reports_dir = os.path.join(_repo_root_dir, '..', season_relative_path)
@@ -140,8 +138,8 @@ def save_index(report_types, index_config, league_names, is_archive):
 
     with open(os.path.join(_repo_root_dir, 'templates/index.html'), 'r', encoding='utf-8') as template_fp:
         template = Template(template_fp.read())
-    github = config()['main_github']
-    repo = config()['main_repo']
+    github = global_config['main_github']
+    repo = global_config['main_repo']
     html_str = template.render({
         'title': 'Fantasy Fun Stuff (archive)' if is_archive else 'Fantasy Fun Stuff',
         'active_indexes': sports_indexes,
@@ -153,12 +151,12 @@ def save_index(report_types, index_config, league_names, is_archive):
         html_fp.write(html_str)
 
 
-def save_reports_type_indexes(report_types, league_names):
+def save_reports_type_indexes(report_types, global_config, league_names):
     for report_type in report_types:
-        github = config()[report_type]['github']
+        github = global_config[report_type]['github']
         all_leagues = defaultdict(list)
-        reports_repo_name = config()[report_type]['repo_name']
-        reports_dir_name = config()[report_type]['dir_name']
+        reports_repo_name = global_config[report_type]['repo_name']
+        reports_dir_name = global_config[report_type]['dir_name']
         reports_dir = os.path.join(_repo_root_dir, '..', reports_repo_name, reports_dir_name)
         for sports in _sports_keys:
             sports_reports_dir = os.path.join(reports_dir, sports)
@@ -181,13 +179,13 @@ def save_reports_type_indexes(report_types, league_names):
         html_str = template.render({
             'title': f'Fantasy Fun Stuff ({_reports_key_to_description[report_type]})',
             'indexes': indexes,
-            'google_analytics_key': config()[report_type]['google_analytics_key']
+            'google_analytics_key': global_config[report_type]['google_analytics_key']
         })
         with open(os.path.join(reports_dir, 'index.html'), 'w', encoding='utf-8') as html_fp:
             html_fp.write(html_str)
 
 
-def save_league_index(league_name, league_settings):
+def save_league_index(league_name, league_settings, global_config):
     sports = league_settings['sports']
     league_id = league_settings['leagues'].split(',')[0]
     enable_analytics_flags = list(map(int, league_settings.get('is_analytics_enabled', '0').split(',')))
@@ -197,18 +195,18 @@ def save_league_index(league_name, league_settings):
     with open(os.path.join(_repo_root_dir, 'templates/league_home.html'), 'r', encoding='utf-8') as template_fp:
         template = Template(template_fp.read())
 
-    main_github = config()['main_github']
-    main_repo = config()['main_repo']
+    main_github = global_config['main_github']
+    main_repo = global_config['main_repo']
     main_index_url = f'https://{main_github}.github.io/{main_repo}/homepage.html'
     for index_key in index_keys:
-        index_repo_name = config()[index_key]['repo_name']
-        index_dir_name = config()[index_key]['dir_name']
+        index_repo_name = global_config[index_key]['repo_name']
+        index_dir_name = global_config[index_key]['dir_name']
         index_relative_path = os.path.join(index_repo_name, index_dir_name, sports, league_id)
         home_page_dir = os.path.join(_repo_root_dir, '..', index_relative_path)
         Path(home_page_dir).mkdir(parents=True, exist_ok=True)
 
         indexes_by_year = []
-        github = config()[index_key]['github']
+        github = global_config[index_key]['github']
         dirs = [item for item in os.listdir(home_page_dir) if os.path.isdir(os.path.join(home_page_dir, item))]
         for season_str in sorted(dirs, reverse=True):
             season_relative_path = os.path.join(index_relative_path, season_str)
@@ -222,26 +220,26 @@ def save_league_index(league_name, league_settings):
             'league_link': f'https://fantasy.espn.com/{sports}/league?leagueId={league_id}',
             'sports': sports,
             'indexes_by_year': indexes_by_year,
-            'google_analytics_key': config()[index_key]['google_analytics_key']
+            'google_analytics_key': global_config[index_key]['google_analytics_key']
         })
         with open(os.path.join(home_page_dir, 'index.html'), 'w', encoding='utf-8') as html_fp:
             html_fp.write(html_str)
 
 
-def save_tables(sports, tables, total_tables, league_id, league_name, matchup, schedule, report_type):
+def save_tables(sports, tables, total_tables, league_id, league_name, matchup, schedule, global_config, report_type):
     today = datetime.datetime.today().date()
     season_start_year = today.year if today.month > 6 else today.year - 1
     season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
     with open(os.path.join(_repo_root_dir, 'templates/matchup_report.html'), 'r', encoding='utf-8') as template_fp:
         template = Template(template_fp.read())
 
-    main_github = config()['main_github']
-    main_repo = config()['main_repo']
+    main_github = global_config['main_github']
+    main_repo = global_config['main_repo']
     main_index_url = f'https://{main_github}.github.io/{main_repo}/homepage.html'
 
-    github = config()[report_type]['github']
-    index_repo_name = config()[report_type]['repo_name']
-    index_dir_name = config()[report_type]['dir_name']
+    github = global_config[report_type]['github']
+    index_repo_name = global_config[report_type]['repo_name']
+    index_dir_name = global_config[report_type]['dir_name']
     index_relative_path = os.path.join(index_repo_name, index_dir_name, sports, league_id, season_str)
     previous_reports_data = _get_previous_reports_data(index_relative_path, matchup, schedule, github)
     title = f'{league_name} ({sports}). Matchup {matchup} {_reports_key_to_description[report_type]}'
@@ -253,7 +251,7 @@ def save_tables(sports, tables, total_tables, league_id, league_name, matchup, s
         'leagues': tables,
         'total_tables': total_tables,
         'previous_reports': previous_reports_data,
-        'google_analytics_key': config()[report_type]['google_analytics_key']
+        'google_analytics_key': global_config[report_type]['google_analytics_key']
     })
     report_dir = os.path.join(_repo_root_dir, '..', index_relative_path)
     Path(report_dir).mkdir(parents=True, exist_ok=True)

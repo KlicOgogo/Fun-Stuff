@@ -194,9 +194,9 @@ def main():
         if error is not None:
             raise error
 
-    utils.common.save_index(utils.globals.REPORT_TYPES, index_config, league_names, is_archive=True)
-    utils.common.save_index(utils.globals.REPORT_TYPES, index_config, league_names, is_archive=False)
-    utils.common.save_reports_type_indexes(utils.globals.REPORT_TYPES, league_names)
+    utils.common.save_index(utils.globals.REPORT_TYPES, utils.globals.config(), index_config, league_names, is_archive=True)
+    utils.common.save_index(utils.globals.REPORT_TYPES, utils.globals.config(), index_config, league_names, is_archive=False)
+    utils.common.save_reports_type_indexes(utils.globals.REPORT_TYPES, utils.globals.config(), league_names)
 
 if __name__ == '__main__':
     try:
