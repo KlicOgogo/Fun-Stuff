@@ -17,6 +17,7 @@ import utils.globals
 
 
 def _process_leagues(leagues, sports_list, old_data_loaded_matchups, browser):
+    config = utils.globals.config()
     league_names = defaultdict(dict)
     data_loaded_matchups = defaultdict(dict)
 
@@ -28,7 +29,7 @@ def _process_leagues(leagues, sports_list, old_data_loaded_matchups, browser):
                 continue
 
             schedule = None
-            use_offline_schedule = utils.globals.config()['use_offline_schedule']
+            use_offline_schedule = config['use_offline_schedule']
             for league in league_settings['leagues'].split(','):
                 current_schedule = utils.data.schedule(
                     league, sports, league_settings['is_playoffs_support'], use_offline_schedule, browser)
@@ -50,13 +51,13 @@ def _process_leagues(leagues, sports_list, old_data_loaded_matchups, browser):
             league_loaded_matchups = old_data_loaded_matchups[sports].get(main_league, [])
             matchup_str = str(matchup)
             is_data_loaded = matchup_str in league_loaded_matchups
-            use_offline_data = utils.globals.config()['use_offline_data'] or is_data_loaded
+            use_offline_data = config['use_offline_data'] or is_data_loaded
             online_page_matchups = []
             if is_full_support and not use_offline_data:
                 if is_season_ended:
                     online_page_matchups = [matchup]
                 else:
-                    online_range_left = max(1, matchup - utils.globals.config()['refresh_matchups'])
+                    online_range_left = max(1, matchup - config['refresh_matchups'])
                     online_page_matchups = list(range(online_range_left, matchup + 1))
 
             scoreboard_data = {}
@@ -67,7 +68,7 @@ def _process_leagues(leagues, sports_list, old_data_loaded_matchups, browser):
             
             matchups_to_process = [matchup]
             if is_full_support:
-                process_range_left = max(1, matchup - utils.globals.config()['refresh_matchups'])
+                process_range_left = max(1, matchup - config['refresh_matchups'])
                 matchups_to_process = list(range(process_range_left, matchup + 1))
 
             box_scores_data = None
@@ -89,7 +90,8 @@ def _process_leagues(leagues, sports_list, old_data_loaded_matchups, browser):
             
             export_reports_function = functions_by_type[type_item]
             for m in matchups_to_process:
-                export_reports_function(league_settings, schedule, m, scoreboard_data, box_scores_data)
+                export_reports_function(
+                    league_settings, schedule, m, scoreboard_data, box_scores_data, config['n_last_matchups'])
             
             data_loaded_matchups[sports][main_league] = league_loaded_matchups
             if not is_data_loaded:

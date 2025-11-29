@@ -13,7 +13,6 @@ _category_names = {}
 _data_loaded_matchups_path = os.path.join(_repo_root_dir, 'res/data_loaded_matchups.config')
 _data_loaded_matchups = defaultdict(dict)
 
-N_RECENT_MATCHUPS = 4
 REPORT_TYPES = ('matchup_stats', 'analytics', 'active_stats')
 
 

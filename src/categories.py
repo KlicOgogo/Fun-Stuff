@@ -9,7 +9,6 @@ import utils.categories
 import utils.common
 import utils.data
 import utils.globals
-from utils.globals import N_RECENT_MATCHUPS
 
 
 _gk_category_lowers = {'GAA': np.inf, 'SV%': -np.inf, 'GA': np.inf}
@@ -66,7 +65,7 @@ def _get_each_category_stats(league, league_settings, schedule, matchup, categor
     return categories, each_category_places, each_category_win_stats
 
 
-def _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data, box_scores_data):
+def _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data, box_scores_data, n_last):
     leagues = league_settings['leagues'].split(',')
     analytics_enabled_flags = map(int, league_settings['is_analytics_enabled'].split(','))
     sports = league_settings['sports']
@@ -87,16 +86,16 @@ def _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data
         tables.append([titles['category_win_stats'], desc['category_win_stats'],
             table.analytics.win_stats_by_each_category(each_category_win_stats, categories)])
         tables.append([
-            titles['recent_category_win_stats'].format(N_RECENT_MATCHUPS),
-            desc['recent_category_win_stats'].format(N_RECENT_MATCHUPS),
-            table.analytics.win_stats_by_each_category(each_category_win_stats, categories, N_RECENT_MATCHUPS)
+            titles['recent_category_win_stats'].format(n_last),
+            desc['recent_category_win_stats'].format(n_last),
+            table.analytics.win_stats_by_each_category(each_category_win_stats, categories, n_last)
         ])
         tables.append([titles['category_power'], desc['category_power'],
             table.analytics.category_power(each_category_places, categories)])
         tables.append([
-            titles['recent_category_power'].format(N_RECENT_MATCHUPS),
-            desc['recent_category_power'].format(N_RECENT_MATCHUPS),
-            table.analytics.category_power(each_category_places, categories, N_RECENT_MATCHUPS)
+            titles['recent_category_power'].format(n_last),
+            desc['recent_category_power'].format(n_last),
+            table.analytics.category_power(each_category_places, categories, n_last)
         ])
         tables.append([titles['category_rankings'], desc['category_rankings'],
             table.analytics.category_rankings(each_category_places, categories)])
@@ -111,13 +110,13 @@ def _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data
             tables.append([
                 titles['category_places'].format(category_name),
                 desc['category_places'].format(category_name),
-                table.common.places(places, matchups, False, False, N_RECENT_MATCHUPS)
+                table.common.places(places, matchups, False, False, n_last)
             ])
 
         for team_id, team_name in sorted(team_names.items()):
             team_key = (team_name, team_id, league_name, league)
             tables.append([titles['team_category_record'].format(team_name), desc['team_category_record'],
-                table.analytics.h2h_category_record(each_category_places, categories, team_key, N_RECENT_MATCHUPS)])
+                table.analytics.h2h_category_record(each_category_places, categories, team_key, n_last)])
             tables.append([titles['result_expectation'].format(team_name), desc['result_expectation'],
                 table.analytics.power_predictions(each_category_places, team_key, matchups)])
 
@@ -126,7 +125,7 @@ def _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data
     return analytics_tables
 
 
-def _export_overall_tables(matchup, categories, plays, scores, stats_pairs, league_settings):
+def _export_overall_tables(matchup, categories, plays, scores, stats_pairs, league_settings, n_last):
     tiebreaker = league_settings['tiebreaker']
     titles = utils.globals.titles()
     desc = utils.globals.descriptions()
@@ -145,7 +144,7 @@ def _export_overall_tables(matchup, categories, plays, scores, stats_pairs, leag
     overall_tables.append([titles['matchup_overall'], desc['matchup_overall'],
         table.categories.matchup(
             categories, stats, scores, plays_data, places_data, comparisons, expected_data,
-            N_RECENT_MATCHUPS, utils.categories.LESS_TO_WIN_CATEGORIES)])
+            n_last, utils.categories.LESS_TO_WIN_CATEGORIES)])
 
     places = defaultdict(list)
     for m in range(matchup):
@@ -154,11 +153,11 @@ def _export_overall_tables(matchup, categories, plays, scores, stats_pairs, leag
         for team in places_sum_places:
             places[team].append(places_sum_places[team])
     overall_tables.append([titles['places_overall'], desc['places_overall'],
-        table.common.places(places, np.arange(1, matchup + 1), False, True, N_RECENT_MATCHUPS)])
+        table.common.places(places, np.arange(1, matchup + 1), False, True, n_last)])
     return overall_tables
 
 
-def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scores_data):
+def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scores_data, n_last):
     plays_getters = {'basketball': utils.data.minutes, 'hockey': utils.data.player_games}
     is_each_category = league_settings['is_each_category']
     leagues = league_settings['leagues'].split(',')
@@ -211,7 +210,7 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
         tables.append([titles['matchup'], desc['matchup'],
             table.categories.matchup(
                 categories, stats, scores_data, plays_data, places_data, comparisons, exp_data,
-                N_RECENT_MATCHUPS, utils.categories.LESS_TO_WIN_CATEGORIES)])
+                n_last, utils.categories.LESS_TO_WIN_CATEGORIES)])
 
         places = defaultdict(list)
         opp_places = defaultdict(list)
@@ -267,16 +266,16 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
 
         matchups = np.arange(1, matchup + 1)
         tables.append([titles['places'], desc['places'],
-            table.common.places(places, matchups, False, False, N_RECENT_MATCHUPS)])
+            table.common.places(places, matchups, False, False, n_last)])
         tables.append([titles['places_opp'], desc['places_opp'],
-            table.common.places(opp_places, matchups, True, False, N_RECENT_MATCHUPS)])
+            table.common.places(opp_places, matchups, True, False, n_last)])
 
         tables.append([titles['pairwise_matchup'], desc['pairwise_matchup'],
             table.categories.comparisons(
-                comparisons, matchups, False, N_RECENT_MATCHUPS, utils.categories.LESS_TO_WIN_CATEGORIES)])
+                comparisons, matchups, False, n_last, utils.categories.LESS_TO_WIN_CATEGORIES)])
         tables.append([titles['pairwise_matchup_opp'], desc['pairwise_matchup_opp'],
             table.categories.comparisons(
-                opp_comparisons, matchups, True, N_RECENT_MATCHUPS, utils.categories.LESS_TO_WIN_CATEGORIES)])
+                opp_comparisons, matchups, True, n_last, utils.categories.LESS_TO_WIN_CATEGORIES)])
         tables.append([titles['pairwise_h2h'], desc['pairwise_h2h'], table.common.h2h(comparisons_h2h)])
         if is_each_category:
             each_category_stats = {}
@@ -290,7 +289,7 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
             table_stats = (each_category_stats, expected_each_category_stats)
             tables.append([titles['expected_cat'], desc['expected_cat'],
                 table.categories.expected_each_category_stats(
-                    *table_stats, matchup, N_RECENT_MATCHUPS, utils.categories.LESS_TO_WIN_CATEGORIES)])
+                    *table_stats, matchup, n_last, utils.categories.LESS_TO_WIN_CATEGORIES)])
         else:
             tables.append([titles['expected_win'], desc['expected_win'],
                 table.categories.expected_win_stats(win_record, expected_win_record, matchups)])
@@ -314,14 +313,15 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
                 key_dict = {'basketball': 'minutes', 'hockey': 'games'}
                 table_key = key_dict[sports]
                 tables.append([titles[table_key], desc[table_key],
-                    table.common.scores(plays, matchups, False, N_RECENT_MATCHUPS)])
+                    table.common.scores(plays, matchups, False, n_last)])
                 tables.append([titles[f'{table_key}_places'], desc[f'{table_key}_places'],
-                    table.common.places(plays_places, matchups, False, False, N_RECENT_MATCHUPS)])
+                    table.common.places(plays_places, matchups, False, False, n_last)])
 
         league_link = f'https://fantasy.espn.com/{sports}/league?leagueId={league}'
         leagues_tables.append([league_name, league_link, tables])
 
-    analytics_tables = _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data, box_scores_data)
+    analytics_tables = _export_analytics_tables(
+        league_settings, schedule, matchup, scoreboard_data, box_scores_data, n_last)
     overall_tables = []
     if len(leagues) > 1:
         overall_tables = _export_overall_tables(matchup, categories, overall_plays,

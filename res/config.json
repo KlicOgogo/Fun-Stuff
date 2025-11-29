@@ -1,5 +1,6 @@
 {
   "n_jobs": 2,
+  "n_last_matchups": 4,
   "use_offline_schedule": true,
   "use_offline_data": false,
   "refresh_matchups": 1,
