@@ -165,7 +165,8 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
     is_full_support = league_settings['is_full_support']
     gk_threshold = league_settings['gk_threshold'] if 'gk_threshold' in league_settings else None
     double_gk_threshold_key = 'is_playoffs_double_gk_threshold'
-    is_playoffs_double_gk_threshold = league_settings[double_gk_threshold_key] if double_gk_threshold_key in league_settings else False
+    is_playoffs_double_gk_threshold = league_settings[double_gk_threshold_key] \
+        if double_gk_threshold_key in league_settings else False
 
     leagues_tables = []
     overall_plays = {} if is_full_support else None

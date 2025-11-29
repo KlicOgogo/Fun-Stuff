@@ -4,6 +4,7 @@ import json
 from multiprocessing.dummy import Pool as ThreadPool
 from operator import itemgetter
 import os
+import random
 import sys
 import traceback
 
@@ -114,6 +115,7 @@ def _split_for_parallel(index_config, league_types, league_sizes, count):
         (league_settings, league_type, league_size)
         for league_settings, league_type, league_size in zip(index_config, league_types, league_sizes)
     ]
+    random.shuffle(settings_grouped)
     for single_settings in sorted(settings_grouped, reverse=True, key=itemgetter(2)):
         lengths_with_sizes = [(length, -len(index)) for length, index in zip(result_lengths, result_indexes)]
         min_value = min(lengths_with_sizes)
@@ -155,7 +157,7 @@ def main():
 
     if n_jobs == 1:
         names_and_matchups = _process_leagues(
-            settings_splitted[0], sports_list, data_loaded_matchups, utils.data.BrowserManager(40, sleep_timeout))
+            settings_splitted[0], sports_list, data_loaded_matchups, utils.data.BrowserManager(50, sleep_timeout))
         for sports in sports_list:
             league_names[sports].update(names_and_matchups['league_names'][sports])
             data_loaded_matchups[sports].update(names_and_matchups['data_loaded_matchups'][sports])
@@ -171,7 +173,7 @@ def main():
             settings_splitted,
             itertools.repeat(sports_list),
             itertools.repeat(data_loaded_matchups),
-            [utils.data.BrowserManager(40, sleep_timeout) for _ in range(n_jobs)]
+            [utils.data.BrowserManager(50, sleep_timeout) for _ in range(n_jobs)]
         )
         names_and_matchups_list = pool.starmap(_process_leagues, process_params)
         pool.close()
