@@ -33,7 +33,7 @@ def _send_bot_message(text, is_debug, is_delayed):
 def main():
     _send_bot_message('\U0001f608 Chef is cooking', True, False)
     global_config = globals.config()
-    report_types = global_config["report_types"]
+    report_types = global_config['report_types']
 
     for report_type in report_types:
         repo = global_config[report_type]['repo_name']
@@ -45,7 +45,7 @@ def main():
         git_repo.git.reset('--hard')
         git_repo.git.clean('-df')
         git_repo.git.checkout(branch)
-        git_repo.git.pull('origin', branch, env={"GIT_SSH_COMMAND": f'ssh -i ~/.ssh/{ssh_key}'})
+        git_repo.git.pull('origin', branch, env={'GIT_SSH_COMMAND': f'ssh -i ~/.ssh/{ssh_key}'})
 
     index.main()
 
@@ -56,11 +56,12 @@ def main():
 
         repo_path = os.path.join(_repo_root_dir, '..', repo)
         git_repo = git.Repo.init(repo_path)
-        git_repo.git.add('.')
-        today = datetime.datetime.today().date()
         if git_repo.is_dirty():
-            git_repo.git.commit('-m', f'Run and commit executed {today.strftime("%Y-%m-%d")}')
-            git_repo.git.push('origin', branch, env={"GIT_SSH_COMMAND": f'ssh -i ~/.ssh/{ssh_key}'})
+            git_repo.git.add('.')
+            today = datetime.datetime.today().date()
+            today_str = today.strftime('%Y-%m-%d')
+            git_repo.git.commit('-m', f'Run and commit executed {today_str}')
+            git_repo.git.push('origin', branch, env={'GIT_SSH_COMMAND': f'ssh -i ~/.ssh/{ssh_key}'})
 
     message_text = (
         '\U0001fae1 Таблицы по матчапам, которые закончились на прошлой неделе, посчитаны.\n'

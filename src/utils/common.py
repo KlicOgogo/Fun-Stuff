@@ -48,7 +48,7 @@ def _get_previous_reports_data(index_relative_path, matchup, schedule, github):
     previous_reports_data = {}
     for m in prev_reports:
         report_link = f'https://{github}.github.io/{index_relative_path}/matchup_{m}.html'
-        this_matchup_begin, this_matchup_end = map(lambda x: x.strftime("%d/%m/%Y"), schedule[m][0])
+        this_matchup_begin, this_matchup_end = map(lambda x: x.strftime('%d/%m/%Y'), schedule[m][0])
         report_text = f'Matchup {m} ({this_matchup_begin} - {this_matchup_end}).'
         previous_reports_data[m] = (report_text, report_link)
     return previous_reports_data

@@ -99,7 +99,9 @@ def _process_leagues(global_config, leagues, sports_list, old_data_loaded_matchu
             data_loaded_matchups[sports][main_league] = league_loaded_matchups
             if not is_data_loaded:
                 data_loaded_matchups[sports][main_league].append(matchup_str)
-        
+
+            utils.common.save_league_index(league_names[sports][main_league], league_settings, global_config)
+
         return {
             'league_names': league_names,
             'data_loaded_matchups': data_loaded_matchups,
@@ -208,7 +210,7 @@ def main():
         if error is not None:
             raise error
 
-    report_types = global_config["report_types"]
+    report_types = global_config['report_types']
     utils.common.save_index(report_types, global_config, index_config, league_names, is_archive=True)
     utils.common.save_index(report_types, global_config, index_config, league_names, is_archive=False)
     utils.common.save_reports_type_indexes(report_types, global_config, league_names)

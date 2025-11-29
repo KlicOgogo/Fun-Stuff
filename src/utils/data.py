@@ -36,15 +36,15 @@ class BrowserManager(object):
         try:
             self.__browser.get(url)
         except TimeoutException as e:
-            print(f"[Timeout] Page load exceeded limit for {url}: {e}", file=sys.stderr)
+            print(f'[Timeout] Page load exceeded limit for {url}: {e}', file=sys.stderr)
             time.sleep(self.__sleep_timeout)
             # Stop further resource loading so browser doesn't hang
-            self.__browser.execute_script("window.stop();")
+            self.__browser.execute_script('window.stop();')
         except WebDriverException as e:
-            print(f"[WebDriver error] Could not load {url}: {e}", file=sys.stderr)
+            print(f'[WebDriver error] Could not load {url}: {e}', file=sys.stderr)
             time.sleep(self.__sleep_timeout)
             # Optionally stop loading here too
-            self.__browser.execute_script("window.stop();")
+            self.__browser.execute_script('window.stop();')
         finally:
             time.sleep(self.__sleep_timeout)
         
