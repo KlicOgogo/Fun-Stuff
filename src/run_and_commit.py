@@ -1,5 +1,4 @@
 import datetime
-import json
 import os
 import time
 import traceback
@@ -9,6 +8,7 @@ from telegram import Bot
 
 import globals
 import index
+from utils.json_utils import load as json_load
 
 
 _repo_root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
@@ -16,10 +16,9 @@ _bot = None
 
 
 def _send_bot_message(text, is_debug, is_delayed):
-    bot_settings_path = os.path.join(_repo_root_dir, 'res', 'bot.config')
-    with open(bot_settings_path, 'r', encoding='utf-8') as fp:
-        bot_settings = json.load(fp)
-    
+    bot_settings_path = os.path.join(_repo_root_dir, 'res/bot.config')
+    bot_settings = json_load(bot_settings_path)
+
     if is_delayed:
         time.sleep(bot_settings['sleep_time'])
     

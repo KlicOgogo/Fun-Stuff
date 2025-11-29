@@ -1,6 +1,5 @@
 from collections import defaultdict
 import itertools
-import json
 from multiprocessing.dummy import Pool as ThreadPool
 from operator import itemgetter
 import os
@@ -14,6 +13,11 @@ import globals
 import points
 import utils.common
 import utils.data
+from utils.json_utils import dump as json_dump
+from utils.json_utils import load as json_load
+
+
+_repo_root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 
 
 def _process_leagues(global_config, leagues, sports_list, old_data_loaded_matchups, browser):
@@ -132,10 +136,8 @@ def main():
     globals.category_names()
     globals.config
     globals.descriptions()
-    globals.league_names()
     globals.titles()
-    globals.data_loaded_matchups()
-    
+
     global_config = globals.config()
     sports_list = ['basketball', 'hockey']
     types_list = ['categories', 'points']
@@ -151,19 +153,21 @@ def main():
     leagues_settings = {}
     for type_item in types_list:
         leagues_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', f'res/{type_item}.json')
-        with open(leagues_path, 'r', encoding='utf-8') as fp:
-            leagues = json.load(fp)
-            leagues_settings[type_item] = leagues
-            index_config.extend(leagues)
-            index_types.extend([type_item] * len(leagues))
-            index_sizes.extend([l['leagues'].count(',') + 1 for l in leagues])
+        leagues = json_load(leagues_path)
+        leagues_settings[type_item] = leagues
+        index_config.extend(leagues)
+        index_types.extend([type_item] * len(leagues))
+        index_sizes.extend([l['leagues'].count(',') + 1 for l in leagues])
 
     n_jobs = global_config['n_jobs']
     sleep_timeout = global_config['timeout']
     settings_splitted = _split_for_parallel(index_config, index_types, index_sizes, n_jobs)
 
-    data_loaded_matchups = globals.data_loaded_matchups()
-    league_names = globals.league_names()
+    league_names_path = os.path.join(_repo_root_dir, 'res/league_names.json')
+    league_names = json_load(league_names_path, defaultdict(dict))
+
+    data_loaded_matchups_path = os.path.join(_repo_root_dir, 'res/data_loaded_matchups.config')
+    data_loaded_matchups = json_load(data_loaded_matchups_path, defaultdict(dict))
 
     if n_jobs == 1:
         names_and_matchups = _process_leagues(
@@ -173,9 +177,9 @@ def main():
             league_names[sports].update(names_and_matchups['league_names'][sports])
             data_loaded_matchups[sports].update(names_and_matchups['data_loaded_matchups'][sports])
         
-        globals.save_data_loaded_matchups()
-        globals.save_league_names()
-        
+        json_dump(league_names, league_names_path)
+        json_dump(data_loaded_matchups, data_loaded_matchups_path)
+
         if 'error' in names_and_matchups:
             raise names_and_matchups[e]
     else:
@@ -198,8 +202,8 @@ def main():
                 if 'error' in names_and_matchups:
                     error = names_and_matchups['error']
 
-        globals.save_data_loaded_matchups()
-        globals.save_league_names()
+        json_dump(league_names, league_names_path)
+        json_dump(data_loaded_matchups, data_loaded_matchups_path)
 
         if error is not None:
             raise error
