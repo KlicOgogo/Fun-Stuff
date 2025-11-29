@@ -163,6 +163,7 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
     plays_getters = {'basketball': utils.data.minutes, 'hockey': utils.data.player_games}
     is_each_category = league_settings['is_each_category']
     leagues = league_settings['leagues'].split(',')
+    leagues_names = []
     sports = league_settings['sports']
     tiebreaker = league_settings['tiebreaker']
     is_full_support = league_settings['is_full_support']
@@ -177,6 +178,7 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
     overall_stats_pairs = [[] for _ in range(matchup)]
     for league in leagues:
         scores, _, category_pairs, league_name = scoreboard_data[league]
+        leagues_names.append(league_name)
         scores_data = scores[matchup - 1]
         overall_scores.extend(scores_data)
         
@@ -331,6 +333,8 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
     if len(leagues) > 1:
         overall_tables = _export_overall_tables(matchup, categories, overall_plays,
             overall_scores, overall_stats_pairs, league_settings)
-    utils.common.save_tables(sports, leagues_tables, overall_tables, leagues[0], matchup, schedule, 'matchup_stats')
-    utils.common.save_tables(sports, analytics_tables, [], leagues[0], matchup, schedule, 'analytics')
-    utils.common.save_league_index(league_settings)
+    utils.common.save_tables(
+        sports, leagues_tables, overall_tables, leagues[0], leagues_names[0], matchup, schedule, 'matchup_stats')
+    utils.common.save_tables(
+        sports, analytics_tables, [], leagues[0], leagues_names[0], matchup, schedule, 'analytics')
+    utils.common.save_league_index(leagues_names[0], league_settings)

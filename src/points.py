@@ -132,12 +132,14 @@ def _export_overall_tables(n_leagues, matchup, overall_scores, n_last):
 
 def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scores_data, n_last):
     leagues = league_settings['leagues'].split(',')
+    leagues_names = []
     sports = league_settings['sports']
     
     overall_scores = defaultdict(list)
     leagues_tables = []
     for league_id in leagues:
         scores_pairs, _, _, league_name = scoreboard_data[league_id]
+        leagues_names.append(league_name)
         scores = defaultdict(list)
         for matchup_results in scores_pairs[:matchup]:
             for p1, p2 in matchup_results:
@@ -166,5 +168,6 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
         leagues_tables.append([league_name, link, tables])
 
     overall_tables = _export_overall_tables(len(leagues), matchup, overall_scores, n_last)
-    utils.common.save_tables(sports, leagues_tables, overall_tables, leagues[0], matchup, schedule, 'matchup_stats')
-    utils.common.save_league_index(league_settings)
+    utils.common.save_tables(
+        sports, leagues_tables, overall_tables, leagues[0], leagues_names[0], matchup, schedule, 'matchup_stats')
+    utils.common.save_league_index(leagues_names[0], league_settings)
