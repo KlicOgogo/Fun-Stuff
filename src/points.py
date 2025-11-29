@@ -9,7 +9,11 @@ import utils.data
 import utils.points
 
 
-def _export_league_tables(sports, matchup, scores, scores_pairs, plays, plays_places, n_last, titles, descriptions):
+_plays_per_game = {'basketball': 30, 'hockey': 1}
+_plays_names = {'basketball': 'minutes', 'hockey': 'games'}
+
+
+def _league_scores_tables(matchup, scores, scores_pairs, global_resources):
     tables = []
     opp_scores = defaultdict(list)
     luck = defaultdict(list)
@@ -33,6 +37,9 @@ def _export_league_tables(sports, matchup, scores, scores_pairs, plays, plays_pl
             opp_luck[team].append(matchup_luck[opp_dict[team]])
     
     matchups = np.arange(1, matchup + 1)
+    n_last = global_resources['config']['n_last_matchups']
+    titles = global_resources['titles']
+    descriptions = global_resources['descriptions']
     tables.append([
         titles['scores'], descriptions['scores'],
         table.common.scores(scores, matchups, False, n_last)])
@@ -66,32 +73,37 @@ def _export_league_tables(sports, matchup, scores, scores_pairs, plays, plays_pl
         titles['pairwise_h2h'], descriptions['pairwise_h2h'],
         table.common.h2h(pairwise_h2h)])
 
-    if not plays:
-        return tables
+    return tables
 
-    table_key_dict = {'basketball': 'minutes', 'hockey': 'games'}
-    table_key = table_key_dict[sports]
+
+def _league_plays_tables(sports, matchup, scores, plays, plays_places, global_resources):
+    n_last = global_resources['config']['n_last_matchups']
+    titles = global_resources['titles']
+    descriptions = global_resources['descriptions']
+
+    plays_name = _plays_names[sports]
+    matchups = np.arange(1, matchup + 1)
+    tables = []
     tables.append([
-        titles[table_key],descriptions[table_key],
+        titles[plays_name], descriptions[plays_name],
         table.common.scores(plays, matchups, False, n_last)])
     tables.append([
-        titles[f'{table_key}_places'], descriptions[f'{table_key}_places'],
+        titles[f'{plays_name}_places'], descriptions[f'{plays_name}_places'],
         table.common.places(plays_places, matchups, False, False, n_last)])
 
     mean_scores = {}
-    row_multiplier_dict = {'basketball': 100, 'hockey': 1}
     for team in scores:
         scores_row = np.array(scores[team])
         plays_row = np.array(plays[team])
-        mean_scores[team] = list(np.round(scores_row / plays_row * row_multiplier_dict[sports], 2))
+        mean_scores[team] = list(np.round(scores_row / plays_row * _plays_per_game[sports], 2))
     tables.append([
         titles['mean'], descriptions['mean'],
         table.common.scores(mean_scores, matchups, False, n_last)])
 
     mean_scores_places = defaultdict(list)
-    for m in range(matchup):
-        matchup_data = {team: data[m] for team, data in mean_scores.items()}
-        matchup_places = utils.common.get_places(matchup_data, True)
+    for m in matchups:
+        matchup_mean_scores = {team: scores[m-1] for team, scores in mean_scores.items()}
+        matchup_places = utils.common.get_places(matchup_mean_scores, True)
         for team, value in matchup_places.items():
             mean_scores_places[team].append(value)
     tables.append([
@@ -101,7 +113,11 @@ def _export_league_tables(sports, matchup, scores, scores_pairs, plays, plays_pl
     return tables
 
 
-def _export_overall_tables(n_leagues, matchup, overall_scores, n_last, titles, descriptions):
+def _export_overall_tables(n_leagues, matchup, overall_scores, global_resources):
+    n_last = global_resources['config']['n_last_matchups']
+    titles = global_resources['titles']
+    descriptions = global_resources['descriptions']
+
     overall_tables = []
     if n_leagues > 1:
         overall_places = defaultdict(list)
@@ -149,18 +165,15 @@ def _export_overall_tables(n_leagues, matchup, overall_scores, n_last, titles, d
     return overall_tables
 
 
-def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scores_data, global_resources):
-    n_last = global_resources['config']['n_last_matchups']
-    titles = global_resources['titles']
-    descriptions = global_resources['descriptions']
+def export_reports(league_settings, schedule, matchup, scoreboards, box_scores, global_resources):
     leagues = league_settings['leagues'].split(',')
     leagues_names = []
     sports = league_settings['sports']
     
     overall_scores = defaultdict(list)
-    leagues_tables = []
+    tables = []
     for league_id in leagues:
-        scores_pairs, _, _, league_name = scoreboard_data[league_id]
+        scores_pairs, _, _, league_name = scoreboards[league_id]
         leagues_names.append(league_name)
         scores = defaultdict(list)
         for matchup_results in scores_pairs[:matchup]:
@@ -168,30 +181,33 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
                 scores[p1[0]].append(p1[1])
                 scores[p2[0]].append(p2[1])
         overall_scores.update(scores)
-    
+
+        scores_tables = _league_scores_tables(matchup, scores, scores_pairs, global_resources)
+
         plays = None
         plays_places = None
+        plays_tables = []
         if league_settings['is_full_support']:
             plays_getters = {'basketball': utils.data.minutes, 'hockey': utils.data.player_games}
             plays = defaultdict(list)
             plays_places = defaultdict(list)
             for m in range(matchup):
-                matchup_box_scores_data = box_scores_data[league_id][m]
-                matchup_plays = plays_getters[sports](matchup_box_scores_data)
+                matchup_box_scores = box_scores[league_id][m]
+                matchup_plays = plays_getters[sports](matchup_box_scores)
                 if matchup_plays:
                     for team, value in matchup_plays.items():
                         plays[team].append(value)
                     matchup_places = utils.common.get_places(matchup_plays, True)
                     for team, value in matchup_places.items():
                         plays_places[team].append(value)
+
+            plays_tables = _league_plays_tables(sports, matchup, scores, plays, plays_places, global_resources)
         
         link = f'https://fantasy.espn.com/{sports}/league?leagueId={league_id}'
-        tables = _export_league_tables(
-            sports, matchup, scores, scores_pairs, plays, plays_places, n_last, titles, descriptions)
-        leagues_tables.append([league_name, link, tables])
+        league_tables = scores_tables + plays_tables
+        tables.append([league_name, link, league_tables])
 
-    overall_tables = _export_overall_tables(len(leagues), matchup, overall_scores, n_last, titles, descriptions)
+    overall_tables = _export_overall_tables(len(leagues), matchup, overall_scores, global_resources)
     global_config = global_resources['config']
     utils.common.save_tables(
-        sports, leagues_tables, overall_tables, leagues[0], leagues_names[0],
-        matchup, schedule, global_config, 'results')
+        sports, tables, overall_tables, leagues[0], leagues_names[0], matchup, schedule, global_config, 'results')
