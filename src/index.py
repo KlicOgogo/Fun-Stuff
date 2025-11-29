@@ -25,7 +25,7 @@ def _process_leagues(global_res, leagues, sports_list, old_data_loaded_matchups,
     data_loaded_matchups = defaultdict(dict)
 
     try:
-        functions_by_type = {'points': points.export_reports, 'categories': categories.export_reports}
+        functions_by_type = {'points': points.calculate_tables, 'categories': categories.calculate_tables}
         for league_settings, type_item, _ in leagues:
             sports = league_settings['sports']
             if sports not in sports_list:
@@ -68,7 +68,8 @@ def _process_leagues(global_res, leagues, sports_list, old_data_loaded_matchups,
                 scoreboard_data[league] = utils.data.scoreboard(
                     league, sports, matchup, browser, online_page_matchups, type_item == 'categories')
                 league_names[sports][league] = scoreboard_data[league][3]
-            
+            main_league_name = league_names[sports][main_league]
+
             matchups_to_process = [matchup]
             if is_full_support:
                 process_range_left = max(1, matchup - global_config['refresh_matchups'])
@@ -86,25 +87,30 @@ def _process_leagues(global_res, leagues, sports_list, old_data_loaded_matchups,
                             league, league_name, team_names, sports,
                             current_matchup, pairs[m], schedule, is_offline, browser)
                         box_scores_data[league].append(matchup_data)
-            
+
             if box_scores_data:
                 for m in matchups_to_process:
                     active_stats_tables = active_stats.calculate_tables(
                         league_settings, m, scoreboard_data, box_scores_data, global_res['descriptions'])
                     utils.common.save_tables(
-                        sports, active_stats_tables, [], main_league, league_names[sports][main_league],
-                        matchup, schedule, global_config, 'active stats')
-            
-            export_reports_function = functions_by_type[type_item]
+                        sports, active_stats_tables, [], main_league, main_league_name,
+                        m, schedule, global_config, 'active stats')
+
+            calculate_tables_function = functions_by_type[type_item]
             for m in matchups_to_process:
-                export_reports_function(
+                tables = calculate_tables_function(
                     league_settings, schedule, m, scoreboard_data, box_scores_data, global_res)
-            
+
+                for reports_type, type_tables in tables.items():
+                    utils.common.save_tables(
+                        sports, type_tables['leagues'], type_tables['overall_tables'], 
+                        main_league, main_league_name, m, schedule, global_config, reports_type)
+
             data_loaded_matchups[sports][main_league] = league_loaded_matchups
             if not is_data_loaded:
                 data_loaded_matchups[sports][main_league].append(matchup_str)
 
-            utils.common.save_league_index(league_names[sports][main_league], league_settings, global_config)
+            utils.common.save_league_index(main_league_name, league_settings, global_config)
 
         return {
             'league_names': league_names,

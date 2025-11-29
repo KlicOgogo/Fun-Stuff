@@ -165,7 +165,7 @@ def _export_overall_tables(n_leagues, matchup, overall_scores, global_resources)
     return overall_tables
 
 
-def export_reports(league_settings, schedule, matchup, scoreboards, box_scores, global_resources):
+def calculate_tables(league_settings, schedule, matchup, scoreboards, box_scores, global_resources):
     leagues = league_settings['leagues'].split(',')
     leagues_names = []
     sports = league_settings['sports']
@@ -208,6 +208,6 @@ def export_reports(league_settings, schedule, matchup, scoreboards, box_scores, 
         tables.append([league_name, link, league_tables])
 
     overall_tables = _export_overall_tables(len(leagues), matchup, overall_scores, global_resources)
-    global_config = global_resources['config']
-    utils.common.save_tables(
-        sports, tables, overall_tables, leagues[0], leagues_names[0], matchup, schedule, global_config, 'results')
+    return {
+        'results': {'leagues': tables, 'overall_tables': overall_tables}
+    }
