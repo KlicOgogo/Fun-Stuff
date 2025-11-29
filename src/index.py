@@ -75,27 +75,31 @@ def _process_leagues(global_res, leagues, sports_list, old_data_loaded_matchups,
                 process_range_left = max(1, matchup - global_config['refresh_matchups'])
                 matchups_to_process = list(range(process_range_left, matchup + 1))
 
-            box_scores_data = None
+            box_scores = None
             if league_settings['is_full_support']:
-                box_scores_data = defaultdict(list)
+                box_scores = defaultdict(list)
                 for league in league_settings['leagues'].split(','):
                     pairs, team_names, _, league_name = scoreboard_data[league]
                     for m in range(matchup):
                         current_matchup = m + 1
                         is_offline = current_matchup not in online_page_matchups or use_offline_data
-                        matchup_data = utils.data.box_scores(
-                            league, league_name, team_names, sports,
-                            current_matchup, pairs[m], schedule, is_offline, browser)
-                        box_scores_data[league].append(matchup_data)
+                        matchup_box_scores = None
+                        if is_offline:
+                            matchup_box_scores = utils.data.box_scores_offline(
+                                league, league_name, team_names, sports, current_matchup)
+                        if matchup_box_scores is None:
+                            matchup_box_scores = utils.data.box_scores_online(
+                                league, sports, current_matchup, pairs[m], schedule, browser)
+                        box_scores[league].append(matchup_box_scores)
 
             calculate_tables_function = functions_by_type[type_item]
             for m in matchups_to_process:
                 tables = calculate_tables_function(
-                    league_settings, schedule, m, scoreboard_data, box_scores_data, global_res)
+                    league_settings, schedule, m, scoreboard_data, box_scores, global_res)
 
-                if box_scores_data:
+                if box_scores:
                     active_stats_tables = active_stats.calculate_tables(
-                        league_settings, m, scoreboard_data, box_scores_data, global_res['descriptions'])
+                        league_settings, m, scoreboard_data, box_scores, global_res['descriptions'])
                     tables.update(active_stats_tables)
 
                 for report_type, type_tables in tables.items():

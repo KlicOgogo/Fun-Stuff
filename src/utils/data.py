@@ -228,15 +228,14 @@ def _get_team_names(scoreboard_html):
     return team_names
 
 
-def box_scores(league_id, league_name, team_names, sports, matchup, pairs, schedule, is_offline, browser):
+def box_scores_offline(league_id, league_name, team_names, sports, matchup):
     today = datetime.datetime.today().date()
     season_start_year = today.year if today.month > 6 else today.year - 1
     season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
     offline_box_scores_dir = os.path.join(_offline_data_dir, sports, league_id, season_str)
-    Path(offline_box_scores_dir).mkdir(parents=True, exist_ok=True)
 
     offline_data_path = os.path.join(offline_box_scores_dir, f'box_scores_{matchup}.pkl')
-    if os.path.isfile(offline_data_path) and is_offline:
+    if os.path.isfile(offline_data_path):
         with open(offline_data_path, 'rb') as fp:
             box_scores_stats = pickle.load(fp)
             box_scores_stats_updated = {}
@@ -245,6 +244,12 @@ def box_scores(league_id, league_name, team_names, sports, matchup, pairs, sched
                 actual_team_key = (team_names[team_id], team_id, league_name, league_id)
                 box_scores_stats_updated[actual_team_key] = stats
             return box_scores_stats_updated
+    return None
+
+
+def box_scores_online(league_id, sports, matchup, pairs, schedule, browser):
+    today = datetime.datetime.today().date()
+    season_start_year = today.year if today.month > 6 else today.year - 1
 
     scoring_period_id = (schedule[matchup][0][0] - schedule[1][0][0]).days + 1
     box_scores_stats = {}
@@ -273,6 +278,10 @@ def box_scores(league_id, league_name, team_names, sports, matchup, pairs, sched
             box_scores_totals = _parse_box_scores_totals(tables)
             box_scores_stats[player] = (box_scores_titles, box_scores_data, box_scores_totals)
 
+    season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
+    offline_box_scores_dir = os.path.join(_offline_data_dir, sports, league_id, season_str)
+    Path(offline_box_scores_dir).mkdir(parents=True, exist_ok=True)
+    offline_data_path = os.path.join(offline_box_scores_dir, f'box_scores_{matchup}.pkl')
     with open(offline_data_path, 'wb') as fp:
         pickle.dump(box_scores_stats, fp)
     return box_scores_stats
