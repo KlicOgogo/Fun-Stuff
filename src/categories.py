@@ -76,7 +76,7 @@ def _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data
         if not is_analytics_enabled:
             continue
     
-        _, team_names, category_pairs = scoreboard_data[league]
+        _, team_names, category_pairs, league_name = scoreboard_data[league]
         categories, each_category_places, each_category_win_stats = _get_each_category_stats(
             league, league_settings, schedule, matchup, category_pairs, box_scores_data
         )
@@ -101,7 +101,6 @@ def _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data
         tables.append([titles['category_rankings'], desc['category_rankings'],
             table.analytics.category_rankings(each_category_places, categories)])
 
-        league_name = utils.globals.league_names()[sports][league]
         matchups = np.arange(1, matchup + 1)
         tables.append([titles['result_expectation_h2h'], desc['result_expectation_h2h'],
             table.analytics.power_predictions_h2h(each_category_places)])
@@ -173,7 +172,7 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
     overall_scores = []
     overall_stats_pairs = [[] for _ in range(matchup)]
     for league in leagues:
-        scores, _, category_pairs = scoreboard_data[league]
+        scores, _, category_pairs, league_name = scoreboard_data[league]
         scores_data = scores[matchup - 1]
         overall_scores.extend(scores_data)
         
@@ -310,7 +309,6 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
                     table.common.places(plays_places, matchups, False, False)])
 
         league_link = f'https://fantasy.espn.com/{sports}/league?leagueId={league}'
-        league_name = utils.globals.league_names()[sports][league]
         leagues_tables.append([league_name, league_link, tables])
 
     analytics_tables = _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data, box_scores_data)

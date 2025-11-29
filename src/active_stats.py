@@ -113,14 +113,14 @@ def _summarize(stats_list, sports):
     return stats_summarized
 
 
-def export_reports(league_settings, schedule, matchup, active_stats_data):
+def export_reports(league_settings, schedule, matchup, scoreboard_data, active_stats_data):
     leagues = league_settings['leagues'].split(',')
     sports = league_settings['sports']
     
     leagues_tables = []
     for league_id in leagues:
+        _, _, _, league_name = scoreboard_data[league_id]
         link = f'https://fantasy.espn.com/{sports}/league?leagueId={league_id}'
-        league_name = utils.globals.league_names()[sports][league_id]
 
         league_active_stats = active_stats_data[league_id]
         tables = _export_league_tables(sports, matchup, league_active_stats)

@@ -13,9 +13,6 @@ from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
 
 
-from utils.globals import league_names, config
-
-
 class BrowserManager(object):
     def __init__(self, page_limit, sleep_timeout):
         self.__options = Options()
@@ -231,7 +228,7 @@ def _get_team_names(scoreboard_html):
     return team_names
 
 
-def box_scores(league_id, team_names, sports, matchup, pairs, schedule, is_offline, browser):
+def box_scores(league_id, league_name, team_names, sports, matchup, pairs, schedule, is_offline, browser):
     today = datetime.datetime.today().date()
     season_start_year = today.year if today.month > 6 else today.year - 1
     season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
@@ -245,7 +242,7 @@ def box_scores(league_id, team_names, sports, matchup, pairs, schedule, is_offli
             box_scores_stats_updated = {}
             for old_team_key, stats in box_scores_stats.items():
                 team_id = old_team_key[1]
-                actual_team_key = (team_names[team_id], team_id, league_names()[sports][league_id], league_id)
+                actual_team_key = (team_names[team_id], team_id, league_name, league_id)
                 box_scores_stats_updated[actual_team_key] = stats
             return box_scores_stats_updated
 
@@ -290,7 +287,7 @@ def gk_games(matchup_box_scores_data):
     return gk_games if np.sum(list(gk_games.values())) != 0 else None
 
 
-def _matchup_category_pairs(sports, scoreboard_html, league_id, team_names):
+def _matchup_category_pairs(sports, scoreboard_html, league_id, league_name, team_names):
     pairs = []
     for scoreboard_row in scoreboard_html.findAll('div', {'class': 'Scoreboard__Row'}):
         opponents = scoreboard_row.findAll('li', 'ScoreboardScoreCell__Item')
@@ -299,7 +296,7 @@ def _matchup_category_pairs(sports, scoreboard_html, league_id, team_names):
             team_id_a_tag = o.findAll('a', {'class': 'AnchorLink'})
             team_id = re.findall(r'teamId=(\d+)', team_id_a_tag[0]['href'])[0]
             team_ids.append(team_id)
-        teams = [(team_names[team_id], team_id, league_names()[sports][league_id], league_id) for team_id in team_ids]
+        teams = [(team_names[team_id], team_id, league_name, league_id) for team_id in team_ids]
         rows = scoreboard_row.findAll('tr', {'class': 'Table__TR'})
         categories = [header.text for header in rows[-3].findAll('th', {'class': 'Table__TH'})[1:]]
         first_team_stats = [data.text for data in rows[-2].findAll('td', {'class': 'Table__TD'})[1:]]
@@ -397,7 +394,6 @@ def scoreboard(league_id, sports, matchup, browser, online_matchups, is_category
         soups.append(html_soup)
 
     league_name = soups[-1].findAll('h3')[0].text
-    league_names()[sports][league_id] = league_name
     team_names = _get_team_names(soups[-1])
 
     scores = []
@@ -405,6 +401,6 @@ def scoreboard(league_id, sports, matchup, browser, online_matchups, is_category
     for m in range(matchup):
         scores.append(_get_matchup_scores(soups[m], team_names, league_id, league_name))
         if is_category_league:
-            matchup_category_pairs = _matchup_category_pairs(sports, soups[m], league_id, team_names)
+            matchup_category_pairs = _matchup_category_pairs(sports, soups[m], league_id, league_name, team_names)
             category_pairs.append(matchup_category_pairs)
-    return scores, team_names, category_pairs
+    return scores, team_names, category_pairs, league_name

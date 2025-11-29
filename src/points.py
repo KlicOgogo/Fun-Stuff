@@ -136,7 +136,7 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
     overall_scores = defaultdict(list)
     leagues_tables = []
     for league_id in leagues:
-        scores_pairs, _, _ = scoreboard_data[league_id]
+        scores_pairs, _, _, league_name = scoreboard_data[league_id]
         scores = defaultdict(list)
         for matchup_results in scores_pairs[:matchup]:
             for p1, p2 in matchup_results:
@@ -161,7 +161,6 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
                         plays_places[team].append(value)
         
         link = f'https://fantasy.espn.com/{sports}/league?leagueId={league_id}'
-        league_name = utils.globals.league_names()[sports][league_id]
         tables = _export_league_tables(sports, matchup, scores, scores_pairs, plays, plays_places)
         leagues_tables.append([league_name, link, tables])
 

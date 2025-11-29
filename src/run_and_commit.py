@@ -83,4 +83,3 @@ if __name__ == '__main__':
     finally:
         finish_time = time.time()
         _send_bot_message(f'Время выполнения: {finish_time - start_time:.2f} секунд', True, False)
-        utils.globals.save_league_names()
