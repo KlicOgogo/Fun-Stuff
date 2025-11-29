@@ -4,6 +4,22 @@ from utils.categories import LESS_TO_WIN_CATEGORIES
 from utils.globals import N_RECENT_MATCHUPS
 
 
+_hockey_categories = {
+        'G', 'A', '+/-', 'PIM', 'FOW', 'ATOI', 'SOG', 'HIT', 'BLK', 'DEF', 'STP', 'PPP', 'SHP', 
+        'W', 'GA', 'SV', 'GAA', 'SV%', 'SO'
+    }
+_basketball_categories = {
+    'FG%', 'FT%', '3PM', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PTS', '3P%', 'DD', 'PF', 'TD', '3P%'
+}
+_categories = _hockey_categories | _basketball_categories
+_no_value_cols = {
+    'Pos', '%',
+    'League', 'TP', 'ER', 'SUM',
+    'W  ', 'L', 'D', 'WD', 'LD', 'DD  ',
+    'MIN ', 'GP ', 'Diff', 'Team',
+}
+  
+
 def add_position_column(df):
     position = {index: i + 1 for i, index in enumerate(df.index)}
     df_position = pd.DataFrame(list(position.values()), index=position.keys(), columns=['Pos'])
@@ -12,29 +28,12 @@ def add_position_column(df):
 
 
 def get_extremums(df, opp_flag):
-    hockey_categories = {
-        'G', 'A', '+/-', 'PIM', 'FOW', 'ATOI', 'SOG', 'HIT', 'BLK', 'DEF', 'STP', 'PPP', 'SHP', 
-        'W', 'GA', 'SV', 'GAA', 'SV%', 'SO'
-    }
-    basketball_categories = {
-        'FG%', 'FT%', '3PM', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PTS', '3P%', 'DD', 'PF', 'TD', '3P%'
-    }
-    categories = hockey_categories | basketball_categories
-    no_value_cols = {
-        'Pos', f'L{N_RECENT_MATCHUPS}%', '%',
-        'League', 'TP', 'ER', 'SUM',
-        'W  ', 'L', 'D', 'WD', 'LD', 'DD  ',
-        'MIN ', 'GP ', 'Diff'
-    }
-    
     best = {}
     worst = {}
     for col in df.columns:
-        if col in no_value_cols | {f'{col} ' for col in categories}:
+        if col in _no_value_cols | {f'{col} ' for col in _categories} | {f'L{N_RECENT_MATCHUPS}%'}:
             best[col], worst[col] = ('', '')
-        elif col == 'Team':
-            best[col], worst[col] = ('Best', 'Worst')
-        elif col in categories | {'MIN', 'GP'}:
+        elif col in _categories | {'MIN', 'GP'}:
             extremums = (df[col].max(), df[col].min())
             best[col], worst[col] = extremums[::-1] if col in LESS_TO_WIN_CATEGORIES else extremums
         else:

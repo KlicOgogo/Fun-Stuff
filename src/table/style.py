@@ -54,9 +54,9 @@ def each_category_win_stat(s):
     return _by_ranges(s, ranges, colors)
 
 
-def extremum(s):
+def extremum(s, best_value, worst_value):
     attr = 'background-color'
-    return [f'{attr}: lightgreen' if v == s['Best'] else f'{attr}: orange' if v == s['Worst'] else '' for v in s]
+    return [f'{attr}: lightgreen' if v == best_value else f'{attr}: orange' if v == worst_value else '' for v in s]
 
 
 def opponent_luck_score(v):

@@ -33,11 +33,10 @@ def comparisons(comparisons_data, matchups, opp_flag):
     sort_sign = 1 if opp_flag else -1
     df = df.iloc[np.lexsort((sort_sign * df['W  '], sort_sign * (df['W  '] + df['D'] * 0.5)))]
     df = utils.table.add_position_column(df)
-    df_extremums = pd.DataFrame(list(utils.table.get_extremums(df, opp_flag)), index=['Best', 'Worst'])
-    df = pd.concat((df, df_extremums))
+    best, worst = utils.table.get_extremums(df, opp_flag)
     styler = df.style.format('{:g}', subset=pd.IndexSlice[list(df_data.keys()), recent_cols]).\
         set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
-        apply(style.extremum, subset=matchups).\
+        apply(lambda s: style.extremum(s, best[s.name], worst[s.name]), subset=matchups).\
         map(style.percentage, subset=pd.IndexSlice[list(df_data.keys()), recent_cols])
     return styler.to_html()
 
@@ -60,12 +59,12 @@ def expected_each_category_stats(data, expected_data, matchup):
     df = df_teams.merge(df, how='outer', left_index=True, right_index=True)
     df = df.iloc[np.lexsort((-df['WD'], -df['Diff']))]
     df = utils.table.add_position_column(df)
-    df_extremums = pd.DataFrame(list(utils.table.get_extremums(df, False)), index=['Best', 'Worst'])
-    df = pd.concat((df, df_extremums))
+    best, worst = utils.table.get_extremums(df, False)
+    extremum_lambda = lambda s: style.extremum(s, best[s.name], worst[s.name])
     styler = df.style.format('{:g}', subset=pd.IndexSlice[list(df_data.keys()), ['DD  ', 'WD', 'LD', 'Diff']]).\
         set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
         map(style.value, subset=pd.IndexSlice[list(df_data.keys()), ['Diff']]).\
-        apply(style.extremum, subset=pd.IndexSlice[df.index, [*matchups, 'Total', 'Real']])
+        apply(extremum_lambda, subset=pd.IndexSlice[df.index, [*matchups, 'Total', 'Real']])
     return styler.to_html()
 
 
@@ -138,9 +137,8 @@ def matchup(categories, stats_data, matchup_scores, plays_data, places_data, com
     df = df.merge(df_places, how='outer', left_index=True, right_index=True)
     df = df.iloc[np.lexsort((-df['PTS'], df['SUM']))]
     df = utils.table.add_position_column(df)
-    df_extremums = pd.DataFrame(list(utils.table.get_extremums(df, False)), index=['Best', 'Worst'])
-    df = pd.concat((df, df_extremums))
 
+    best, worst = utils.table.get_extremums(df, False)
     extremum_cols = categories + ['Score']
     if is_each_category:
         extremum_cols.append('ExpScore')
@@ -149,10 +147,11 @@ def matchup(categories, stats_data, matchup_scores, plays_data, places_data, com
 
     num_cols = set(df.columns) - {'Team', 'League', 'Score', 'ER', 'ExpScore', 'ATOI'}
     cols_minus = {*categories, plays_data[0]} if plays_data else set(categories)
+    extremum_lambda = lambda s: style.extremum(s, best[s.name], worst[s.name])
     styler = df.style.format('{:g}', subset=pd.IndexSlice[df_stats.index, list(num_cols - cols_minus)]).\
         format('{:g}', subset=pd.IndexSlice[df.index, list(set(categories) - {'ATOI'})]).\
         set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
-        apply(style.extremum, subset=pd.IndexSlice[df.index, extremum_cols]).\
+        apply(extremum_lambda, subset=pd.IndexSlice[df.index, extremum_cols]).\
         apply(style.place, subset=pd.IndexSlice[df_stats.index, places_cols]).\
         map(style.percentage, subset=pd.IndexSlice[df_stats.index, ['TP']])
     if not is_each_category:
