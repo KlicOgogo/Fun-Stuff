@@ -127,4 +127,6 @@ def calculate_tables(league_settings, matchup, scoreboard_data, active_stats_dat
         link = f'https://fantasy.espn.com/{sports}/league?leagueId={league_id}'
         leagues_tables.append([league_name, link, tables])
 
-    return leagues_tables
+    return {
+        'active stats': {'leagues': leagues_tables, 'overall_tables': []}
+    }

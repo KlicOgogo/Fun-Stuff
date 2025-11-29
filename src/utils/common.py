@@ -53,7 +53,7 @@ def _save_html(template_name, template_params, html_path):
         html_fp.write(html_str)
 
 
-def _get_previous_reports_data(index_relative_path, matchup, schedule, github):
+def _get_previous_reports(index_relative_path, matchup, schedule, github):
     report_dir = os.path.join(_repo_root_dir, '..', index_relative_path)
     contents = [path for path in os.listdir(report_dir)] if os.path.isdir(report_dir) else []
     html_list = [path for path in contents if os.path.splitext(path)[1] == '.html']
@@ -244,7 +244,7 @@ def save_league_index(league_name, league_settings, global_config):
         _save_html('league_home', template_params, league_home_path)
 
 
-def save_tables(sports, tables, total_tables, league_id, league_name, matchup, schedule, global_config, report_type):
+def save_tables(sports, league_id, matchup, schedule, global_config, report_type, params):
     today = datetime.datetime.today().date()
     season_start_year = today.year if today.month > 6 else today.year - 1
     season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
@@ -254,22 +254,19 @@ def save_tables(sports, tables, total_tables, league_id, league_name, matchup, s
     main_index_url = f'https://{main_github}.github.io/{main_repo}/homepage.html'
 
     github = global_config[report_type]['github']
-    index_repo_name = global_config[report_type]['repo_name']
-    index_dir_name = global_config[report_type]['dir_name']
-    index_relative_path = os.path.join(index_repo_name, index_dir_name, sports, league_id, season_str)
-    previous_reports_data = _get_previous_reports_data(index_relative_path, matchup, schedule, github)
-    title = f'{league_name} ({sports}). Matchup {matchup} {report_type}'
+    repo_name = global_config[report_type]['repo_name']
+    dir_name = global_config[report_type]['dir_name']
+    season_reports_dir = os.path.join(repo_name, dir_name, sports, league_id, season_str)
+    previous_reports = _get_previous_reports(season_reports_dir, matchup, schedule, github)
     template_params = {
         'header': f'Fantasy Fun Stuff ({report_type})',
-        'title': title,
         'index': main_index_url,
         'matchup': matchup,
-        'leagues': tables,
-        'total_tables': total_tables,
-        'previous_reports': previous_reports_data,
+        'previous_reports': previous_reports,
         'google_analytics_key': global_config[report_type]['google_analytics_key']
     }
-    report_dir = os.path.join(_repo_root_dir, '..', index_relative_path)
+    template_params.update(params)
+    report_dir = os.path.join(_repo_root_dir, '..', season_reports_dir)
     Path(report_dir).mkdir(parents=True, exist_ok=True)
     matchup_path = os.path.join(report_dir, f'matchup_{matchup}.html')
-    _save_html ('matchup_report', template_params, matchup_path)
+    _save_html('matchup_report', template_params, matchup_path)

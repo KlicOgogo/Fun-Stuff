@@ -88,23 +88,22 @@ def _process_leagues(global_res, leagues, sports_list, old_data_loaded_matchups,
                             current_matchup, pairs[m], schedule, is_offline, browser)
                         box_scores_data[league].append(matchup_data)
 
-            if box_scores_data:
-                for m in matchups_to_process:
-                    active_stats_tables = active_stats.calculate_tables(
-                        league_settings, m, scoreboard_data, box_scores_data, global_res['descriptions'])
-                    utils.common.save_tables(
-                        sports, active_stats_tables, [], main_league, main_league_name,
-                        m, schedule, global_config, 'active stats')
-
             calculate_tables_function = functions_by_type[type_item]
             for m in matchups_to_process:
                 tables = calculate_tables_function(
                     league_settings, schedule, m, scoreboard_data, box_scores_data, global_res)
 
-                for reports_type, type_tables in tables.items():
+                if box_scores_data:
+                    active_stats_tables = active_stats.calculate_tables(
+                        league_settings, m, scoreboard_data, box_scores_data, global_res['descriptions'])
+                    tables.update(active_stats_tables)
+
+                for report_type, type_tables in tables.items():
+                    title = f'{main_league_name} ({sports}). Matchup {m} {report_type}'
+                    template_params = {'title': title}
+                    template_params.update(type_tables)
                     utils.common.save_tables(
-                        sports, type_tables['leagues'], type_tables['overall_tables'], 
-                        main_league, main_league_name, m, schedule, global_config, reports_type)
+                        sports, main_league, m, schedule, global_config, report_type, template_params)
 
             data_loaded_matchups[sports][main_league] = league_loaded_matchups
             if not is_data_loaded:
