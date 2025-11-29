@@ -28,17 +28,27 @@ def get_comparison_stats(stats, categories, less_to_win_categories, tiebreaker):
     return comparison_stats
 
 
-def get_expected_score_and_result(stats, opponents_dict, categories, less_to_win_categories, tiebreaker):
+def get_expected_score(stats, categories, less_to_win_categories):
     expected_score = {team: np.array([0.0, 0.0, 0.0]) for team in stats}
-    tiebreaker_stats = {team: np.array([0.0, 0.0, 0.0]) for team in stats}
     for i, cat in enumerate(categories):
         pairs = [(team, stats[team][i]) for team in stats]
         expected_stats = _get_expected_category_probs(pairs, cat, less_to_win_categories)
-        if cat == tiebreaker:
-            tiebreaker_stats = expected_stats
         for team in expected_stats:
             expected_score[team] += expected_stats[team]
-    
+    return expected_score
+
+
+def get_tiebreaker_stats(stats, categories, less_to_win_categories, tiebreaker):
+    if tiebreaker not in categories:
+        return {team: np.array([0.0, 0.0, 0.0]) for team in stats}
+
+    tiebreaker_index = categories.index(tiebreaker)
+    pairs = [(team, stats[team][tiebreaker_index]) for team in stats]
+    tiebreaker_stats = _get_expected_category_probs(pairs, tiebreaker, less_to_win_categories)
+    return tiebreaker_stats
+
+
+def get_expected_result(expected_score, tiebreaker_stats, opponents_dict):
     expected_result = {}
     for team in expected_score:
         team_score = list(expected_score[team][[0, 2, 1]])
@@ -52,7 +62,7 @@ def get_expected_score_and_result(stats, opponents_dict, categories, less_to_win
                 expected_result[team] = 'W' if team_tiebreaker_score > opponent_tiebreaker_score else 'L'
             else:
                 expected_result[team] = 'D'
-    return expected_score, expected_result
+    return expected_result
 
 
 def get_pair_result(team_stat, opp_stat, categories, less_to_win_categories, tiebreaker):

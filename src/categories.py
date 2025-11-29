@@ -148,9 +148,12 @@ def _export_overall_tables(matchup, categories, plays, scores, stats_pairs, leag
     opp_dict = utils.common.get_opponent_dict(stats_pairs[matchup - 1])
     places_data = utils.categories.get_places_data(stats, categories, _less_to_win_categories)
     comparisons = utils.categories.get_comparison_stats(stats, categories, _less_to_win_categories, tiebreaker)
-    expected_info = utils.categories.get_expected_score_and_result(
-        stats, opp_dict, categories, _less_to_win_categories, tiebreaker)
-    expected_data = expected_info[0] if league_settings['is_each_category'] else expected_info[1]
+
+    expected_score = utils.categories.get_expected_score(stats, categories, _less_to_win_categories)
+    tiebreaker_stats = utils.categories.get_tiebreaker_stats(stats, categories, _less_to_win_categories, tiebreaker)
+    expected_result = utils.categories.get_expected_result(expected_score, tiebreaker_stats, opp_dict)
+    expected_data = expected_score if league_settings['is_each_category'] else expected_result
+
     overall_tables.append([
         titles['matchup_overall'], descriptions['matchup_overall'],
         table.categories.matchup(
@@ -218,15 +221,20 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
         opp_dict = utils.common.get_opponent_dict(matchup_pairs)
         places_data = utils.categories.get_places_data(stats, categories, _less_to_win_categories)
         comparisons = utils.categories.get_comparison_stats(stats, categories, _less_to_win_categories, tiebreaker)
-        expected_info = utils.categories.get_expected_score_and_result(
-            stats, opp_dict, categories, _less_to_win_categories, tiebreaker)
-        exp_data = expected_info[0] if is_each_category else expected_info[1]
+
+        matchup_expected_score = utils.categories.get_expected_score(stats, categories, _less_to_win_categories)
+        matchup_tiebreaker_stats = utils.categories.get_tiebreaker_stats(
+            stats, categories, _less_to_win_categories, tiebreaker)
+        matchup_expected_result = utils.categories.get_expected_result(
+            matchup_expected_score, matchup_tiebreaker_stats, opp_dict)
+        matchup_expected_data = matchup_expected_score \
+            if league_settings['is_each_category'] else matchup_expected_result
 
         tables = []
         tables.append([
             titles['matchup'], descriptions['matchup'],
             table.categories.matchup(
-                categories, stats, scores_data, plays_data, places_data, comparisons, exp_data,
+                categories, stats, scores_data, plays_data, places_data, comparisons, matchup_expected_data,
                 n_last, _less_to_win_categories)])
 
         places = defaultdict(list)
@@ -270,9 +278,11 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
                 result = utils.categories.get_pair_result(
                     stats[team], stats[opp_dict[team]], categories, _less_to_win_categories, tiebreaker)
                 win_record[team][result] += 1
-            expected_data = utils.categories.get_expected_score_and_result(
-                stats, opp_dict, categories, _less_to_win_categories, tiebreaker)
-            expected_score, expected_result = expected_data
+
+            expected_score = utils.categories.get_expected_score(stats, categories, _less_to_win_categories)
+            tiebreaker_stats = utils.categories.get_tiebreaker_stats(stats, categories, _less_to_win_categories, tiebreaker)
+            expected_result = utils.categories.get_expected_result(expected_score, tiebreaker_stats, opp_dict)
+
             for team in expected_score:
                 expected_each_category_stats[team].append(expected_score[team])
                 expected_win_record[team].append(expected_result[team])
