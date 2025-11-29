@@ -12,11 +12,6 @@ from utils.json_utils import load as json_load
 
 
 _repo_root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
-_reports_key_to_description = {
-    'matchup_stats': 'matchup stats',
-    'active_stats': 'active stats',
-    'analytics': 'analytics',
-}
 _sports_keys = ['basketball', 'hockey']
 _sports_to_display = {
     'hockey': 'NHL',
@@ -120,7 +115,7 @@ def save_index(report_types, global_config, index_config, league_names, is_archi
                         continue
                     league_name = league_names[sports][league_id]
                     league_link = f'{index_url_prefix}/{league_id}/index.html'
-                    reports_type_name = _reports_key_to_description[report_type].capitalize()
+                    reports_type_name = report_type.capitalize()
                     sports_display = _sports_to_display[sports]
                     sports_indexes[sports_display][league_name].append([reports_type_name, league_link])
     else:
@@ -144,7 +139,7 @@ def save_index(report_types, global_config, index_config, league_names, is_archi
                 _, latest_report_link = _get_season_reports(season_relative_path, github)
                 
                 league_name = league_names[sports][league_id]
-                reports_type_name = _reports_key_to_description[report_type].capitalize()
+                reports_type_name = report_type.capitalize()
                 sports_display = _sports_to_display[sports]
                 sports_indexes[sports_display][league_name].append([reports_type_name, latest_report_link])
 
@@ -189,7 +184,7 @@ def save_reports_type_indexes(report_types, global_config, league_names):
         with open(os.path.join(_repo_root_dir, 'templates/type_index.html'), 'r', encoding='utf-8') as template_fp:
             template = Template(template_fp.read())
         html_str = template.render({
-            'title': f'Fantasy Fun Stuff ({_reports_key_to_description[report_type]})',
+            'title': f'Fantasy Fun Stuff ({report_type})',
             'indexes': indexes,
             'google_analytics_key': global_config[report_type]['google_analytics_key']
         })
@@ -201,9 +196,9 @@ def save_league_index(league_name, league_settings, global_config):
     sports = league_settings['sports']
     league_id = league_settings['leagues'].split(',')[0]
     enable_analytics_flags = list(map(int, league_settings.get('is_analytics_enabled', '0').split(',')))
-    index_keys = ['matchup_stats', 'analytics'] if np.sum(enable_analytics_flags) != 0 else ['matchup_stats']
+    index_keys = ['results', 'analytics'] if np.sum(enable_analytics_flags) != 0 else ['results']
     if league_settings['is_full_support']:
-        index_keys.append('active_stats')
+        index_keys.append('active stats')
     with open(os.path.join(_repo_root_dir, 'templates/league_home.html'), 'r', encoding='utf-8') as template_fp:
         template = Template(template_fp.read())
 
@@ -226,7 +221,7 @@ def save_league_index(league_name, league_settings, global_config):
             indexes_by_year.append([season_str, season_reports])
 
         html_str = template.render({
-            'title': f'Fantasy Fun Stuff ({_reports_key_to_description[index_key]})',
+            'title': f'Fantasy Fun Stuff ({index_key})',
             'index': main_index_url,
             'league_name': league_name,
             'league_link': f'https://fantasy.espn.com/{sports}/league?leagueId={league_id}',
@@ -254,9 +249,9 @@ def save_tables(sports, tables, total_tables, league_id, league_name, matchup, s
     index_dir_name = global_config[report_type]['dir_name']
     index_relative_path = os.path.join(index_repo_name, index_dir_name, sports, league_id, season_str)
     previous_reports_data = _get_previous_reports_data(index_relative_path, matchup, schedule, github)
-    title = f'{league_name} ({sports}). Matchup {matchup} {_reports_key_to_description[report_type]}'
+    title = f'{league_name} ({sports}). Matchup {matchup} {report_type}'
     html_str = template.render({
-        'header': f'Fantasy Fun Stuff ({_reports_key_to_description[report_type]})',
+        'header': f'Fantasy Fun Stuff ({report_type})',
         'title': title,
         'index': main_index_url,
         'matchup': matchup,

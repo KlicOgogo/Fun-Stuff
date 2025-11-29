@@ -7,8 +7,8 @@
   "main_github": "klicogogo",
   "main_repo": "Fantasy-Fun-Stuff",
   "n_last_matchups": 4,
-  "report_types": ["matchup_stats", "analytics", "active_stats"],
-  "matchup_stats": {
+  "report_types": ["results", "analytics", "active stats"],
+  "results": {
     "github": "klicogogo",
     "repo_name": "Fantasy-Fun-Stuff",
     "dir_name": "reports",
@@ -24,7 +24,7 @@
     "ssh_key": "id_rsa_1809",
     "google_analytics_key": "G-1WZ73TVEM3"
   },
-  "active_stats": {
+  "active stats": {
     "github": "klic69",
     "repo_name": "6523959q7q1958629",
     "dir_name": "active_stats",

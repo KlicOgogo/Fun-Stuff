@@ -358,6 +358,6 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
     global_config = global_resources['config']
     utils.common.save_tables(
         sports, leagues_tables, overall_tables, leagues[0], leagues_names[0],
-        matchup, schedule, global_config, 'matchup_stats')
+        matchup, schedule, global_config, 'results')
     utils.common.save_tables(
         sports, analytics_tables, [], leagues[0], leagues_names[0], matchup, schedule, global_config, 'analytics')

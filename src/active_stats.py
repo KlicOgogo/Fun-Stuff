@@ -130,4 +130,4 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, active_s
 
     global_config = global_resources['config']
     utils.common.save_tables(
-        sports, leagues_tables, [], leagues[0], leagues_names[0], matchup, schedule, global_config, 'active_stats')
+        sports, leagues_tables, [], leagues[0], leagues_names[0], matchup, schedule, global_config, 'active stats')
