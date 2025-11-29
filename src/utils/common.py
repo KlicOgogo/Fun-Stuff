@@ -8,6 +8,8 @@ import re
 from jinja2 import Template
 import numpy as np
 
+from utils.json_utils import load as json_load
+
 
 _repo_root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
 _reports_key_to_description = {
@@ -20,6 +22,16 @@ _sports_to_display = {
     'hockey': 'NHL',
     'basketball': 'NBA',
 }
+_global_resources_keys = ['category_names', 'config', 'descriptions', 'titles']
+
+
+def load_global_resources():
+    global_resources = {}
+    for key in _global_resources_keys:
+        resources_path = os.path.join(_repo_root_dir, 'res', f'{key}.json')
+        resources = json_load(resources_path)
+        global_resources[key] = resources
+    return global_resources
 
 
 def find_proper_matchup(schedule):

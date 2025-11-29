@@ -1,5 +1,5 @@
 from collections import defaultdict
-import itertools
+from copy import deepcopy
 from multiprocessing.dummy import Pool as ThreadPool
 from operator import itemgetter
 import os
@@ -9,7 +9,6 @@ import traceback
 
 import active_stats
 import categories
-import globals
 import points
 import utils.common
 import utils.data
@@ -20,7 +19,8 @@ from utils.json_utils import load as json_load
 _repo_root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 
 
-def _process_leagues(global_config, leagues, sports_list, old_data_loaded_matchups, browser):
+def _process_leagues(global_res, leagues, sports_list, old_data_loaded_matchups, browser):
+    global_config = global_res['config']
     league_names = defaultdict(dict)
     data_loaded_matchups = defaultdict(dict)
 
@@ -89,12 +89,13 @@ def _process_leagues(global_config, leagues, sports_list, old_data_loaded_matchu
             
             if box_scores_data:
                 for m in matchups_to_process:
-                    active_stats.export_reports(league_settings, schedule, m, scoreboard_data, box_scores_data)
+                    active_stats.export_reports(
+                        league_settings, schedule, m, scoreboard_data, box_scores_data, global_res)
             
             export_reports_function = functions_by_type[type_item]
             for m in matchups_to_process:
                 export_reports_function(
-                    league_settings, schedule, m, scoreboard_data, box_scores_data, global_config['n_last_matchups'])
+                    league_settings, schedule, m, scoreboard_data, box_scores_data, global_res)
             
             data_loaded_matchups[sports][main_league] = league_loaded_matchups
             if not is_data_loaded:
@@ -133,14 +134,8 @@ def _split_for_parallel(index_config, league_types, league_sizes, count):
     return result_indexes
 
 
-def main():
-    # Load globals from files to avoid race condition
-    globals.category_names()
-    globals.config
-    globals.descriptions()
-    globals.titles()
-
-    global_config = globals.config()
+def main(global_res):
+    global_config = global_res['config']
     sports_list = ['basketball', 'hockey']
     types_list = ['categories', 'points']
     for arg in sys.argv[1:]:
@@ -173,7 +168,7 @@ def main():
 
     if n_jobs == 1:
         names_and_matchups = _process_leagues(
-            global_config, settings_splitted[0], sports_list,
+            global_res, settings_splitted[0], sports_list,
             data_loaded_matchups, utils.data.BrowserManager(50, sleep_timeout))
         for sports in sports_list:
             league_names[sports].update(names_and_matchups['league_names'][sports])
@@ -186,13 +181,16 @@ def main():
             raise names_and_matchups[e]
     else:
         pool = ThreadPool(n_jobs)
-        process_params = zip(
-            itertools.repeat(global_config),
-            settings_splitted,
-            itertools.repeat(sports_list),
-            itertools.repeat(data_loaded_matchups),
-            [utils.data.BrowserManager(50, sleep_timeout) for _ in range(n_jobs)]
-        )
+        process_params = [
+            (
+                deepcopy(global_res),
+                job_settings,
+                deepcopy(sports_list),
+                deepcopy(data_loaded_matchups),
+                utils.data.BrowserManager(50, sleep_timeout)
+            )
+            for job_settings in settings_splitted
+        ]
         names_and_matchups_list = pool.starmap(_process_leagues, process_params)
         pool.close()
         pool.join()
@@ -217,6 +215,7 @@ def main():
 
 if __name__ == '__main__':
     try:
-        main()
+        global_res = utils.common.load_global_resources()
+        main(global_res)
     except Exception as e:
         traceback.print_exc()

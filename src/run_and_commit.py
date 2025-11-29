@@ -6,8 +6,8 @@ import traceback
 import git
 from telegram import Bot
 
-import globals
 import index
+from utils.common import load_global_resources
 from utils.json_utils import load as json_load
 
 
@@ -31,8 +31,9 @@ def _send_bot_message(text, is_debug, is_delayed):
 
 
 def main():
+    global_res = load_global_resources()
     _send_bot_message('\U0001f608 Chef is cooking', True, False)
-    global_config = globals.config()
+    global_config = global_res['config']
     report_types = global_config['report_types']
 
     for report_type in report_types:
@@ -47,7 +48,7 @@ def main():
         git_repo.git.checkout(branch)
         git_repo.git.pull('origin', branch, env={'GIT_SSH_COMMAND': f'ssh -i ~/.ssh/{ssh_key}'})
 
-    index.main()
+    index.main(global_res)
 
     for report_type in report_types:
         repo = global_config[report_type]['repo_name']

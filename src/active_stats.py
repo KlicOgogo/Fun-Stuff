@@ -1,6 +1,5 @@
 from collections import defaultdict
 
-import globals
 import table.active_stats
 import utils.common
 
@@ -46,9 +45,8 @@ _summarizable_cols = {
 }
 
 
-def _export_league_tables(sports, matchup, league_active_stats):
+def _export_league_tables(sports, matchup, league_active_stats, descriptions):
     players_groups = ['skaters', 'goalies'] if sports == 'hockey' else ['players']
-    descriptions = globals.descriptions()
 
     data_by_team = defaultdict(lambda: defaultdict(list))
     categories_info = defaultdict(dict)
@@ -73,7 +71,8 @@ def _export_league_tables(sports, matchup, league_active_stats):
             team_stats_summarized = _summarize(team_stats_list, sports)
             team_categories = categories_info[team_name][group]
             if team_stats_summarized:
-                tables.append([f'{team_name}: {group}', descriptions['active_stats'],
+                tables.append([
+                    f'{team_name}: {group}', descriptions['active_stats'],
                     table.active_stats.matchup(team_stats_summarized, team_categories)])
     
     return tables
@@ -114,7 +113,7 @@ def _summarize(stats_list, sports):
     return stats_summarized
 
 
-def export_reports(league_settings, schedule, matchup, scoreboard_data, active_stats_data):
+def export_reports(league_settings, schedule, matchup, scoreboard_data, active_stats_data, global_resources):
     leagues = league_settings['leagues'].split(',')
     leagues_names = []
     sports = league_settings['sports']
@@ -125,10 +124,10 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, active_s
         leagues_names.append(league_name)
 
         league_active_stats = active_stats_data[league_id]
-        tables = _export_league_tables(sports, matchup, league_active_stats)
+        tables = _export_league_tables(sports, matchup, league_active_stats, global_resources['descriptions'])
         link = f'https://fantasy.espn.com/{sports}/league?leagueId={league_id}'
         leagues_tables.append([league_name, link, tables])
 
-    global_config = globals.config()
+    global_config = global_resources['config']
     utils.common.save_tables(
         sports, leagues_tables, [], leagues[0], leagues_names[0], matchup, schedule, global_config, 'active_stats')
