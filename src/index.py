@@ -194,7 +194,6 @@ def main():
         if error is not None:
             raise error
 
-
     utils.common.save_index(index_config, is_archive=True)
     utils.common.save_index(index_config, is_archive=False)
     utils.common.save_reports_type_indexes()

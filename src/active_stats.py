@@ -5,6 +5,47 @@ import utils.common
 import utils.globals
 
 
+_basketball_summarizable_cols = [
+    'Minutes', 'Field Goals Made', 'Field Goals Attempted',
+    'Free Throws Made', 'Free Throws Attempted', 'Three Pointers Made',
+    'Rebounds', 'Assists', 'Steals', 'Blocks', 'Turnovers', 'Points',
+]
+_hockey_summarizable_cols = [
+    # skaters
+    'Skater Games Played', 'Goals', 'Assists', 'Points',
+    'Plus/Minus', 'Penalty Minutes', 'Faceoffs Won',
+    'Average Time on Ice',
+    'Shots on Goal', 'Hits', 'Blocked Shots',
+    'Special Teams Points',
+
+    'Power Play Goals',
+    'Power Play Assists',
+    'Short Handed Goals',
+    'Short Handed Assists',
+    'Game-Winning Goals',
+
+    'Shifts',
+    'Hat Tricks',
+    'Defensemen Points',
+
+    # goalies
+    'Games Started',
+    'Wins',
+    'Goals Against',
+    'Saves',
+    'Minutes Played',
+
+    'Shutouts',
+    'Overtime Losses',
+
+    'FPTS',
+]
+_summarizable_cols = {
+    'hockey': _hockey_summarizable_cols,
+    'basketball': _basketball_summarizable_cols,
+}
+
+
 def _export_league_tables(sports, matchup, league_active_stats):
     players_groups = ['skaters', 'goalies'] if sports == 'hockey' else ['players']
     desc = utils.globals.descriptions()
@@ -53,46 +94,6 @@ def _get_updated_atoi(games1, atoi1, games2, atoi2):
 
 
 def _summarize(stats_list, sports):
-    basketball_summarizable_cols = [
-        'Minutes', 'Field Goals Made', 'Field Goals Attempted', 
-        'Free Throws Made', 'Free Throws Attempted', 'Three Pointers Made',
-        'Rebounds', 'Assists', 'Steals', 'Blocks', 'Turnovers', 'Points', 
-    ]
-    hockey_summarizable_cols = [
-        # skaters
-        'Skater Games Played', 'Goals', 'Assists', 'Points',
-        'Plus/Minus', 'Penalty Minutes', 'Faceoffs Won',
-        'Average Time on Ice',
-        'Shots on Goal', 'Hits', 'Blocked Shots',
-        'Special Teams Points',
-
-        'Power Play Goals',
-        'Power Play Assists',
-        'Short Handed Goals',
-        'Short Handed Assists',
-        'Game-Winning Goals',
-
-        'Shifts',
-        'Hat Tricks',
-        'Defensemen Points',
-    
-        # goalies
-        'Games Started',
-        'Wins',
-        'Goals Against',
-        'Saves',
-        'Minutes Played',
-
-        'Shutouts',
-        'Overtime Losses',
-
-        'FPTS',
-    ]
-    summarizable_cols = {
-        'hockey': hockey_summarizable_cols,
-        'basketball': basketball_summarizable_cols,
-    }
-    
     stats_summarized = defaultdict(lambda: defaultdict(int))
     for stats_item in stats_list:
         for player, player_stats in stats_item.items():
@@ -107,7 +108,7 @@ def _summarize(stats_list, sports):
                     stats_summarized[player][cat] += int(cat_value)
                 elif cat == 'FPTS':
                     stats_summarized[player][cat] += float(cat_value)
-                elif cat in summarizable_cols[sports] and cat != 'Average Time on Ice':
+                elif cat in _summarizable_cols[sports] and cat != 'Average Time on Ice':
                     stats_summarized[player][cat] += int(cat_value)
 
     return stats_summarized

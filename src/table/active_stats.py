@@ -7,7 +7,7 @@ import pandas as pd
 from table import style
 from table.common import add_position_column
 
-EPSILON = 0.00000000001
+_epsilon = 0.00000000001
 
 
 def matchup(players_stats, categories_data):
@@ -35,27 +35,27 @@ def matchup(players_stats, categories_data):
             columns_row.append(categories_to_short[cat])
             
             if cat == 'Field Goals Attempted' and 'Field Goals Made' in stats and 'Field Goal Percentage' in categories_to_short:
-                fg_percentage = np.round(stats['Field Goals Made'] / (stats[cat] + EPSILON) * 100.0, 1)
+                fg_percentage = np.round(stats['Field Goals Made'] / (stats[cat] + _epsilon) * 100.0, 1)
                 data_row.append(fg_percentage)
                 columns_row.append(categories_to_short['Field Goal Percentage'])
             elif cat == 'Free Throws Attempted' and 'Free Throws Made' in stats and 'Free Throw Percentage' in categories_to_short:
-                ft_percentage = np.round(stats['Free Throws Made'] / (stats[cat] + EPSILON) * 100.0, 1)
+                ft_percentage = np.round(stats['Free Throws Made'] / (stats[cat] + _epsilon) * 100.0, 1)
                 data_row.append(ft_percentage)
                 columns_row.append(categories_to_short['Free Throw Percentage'])
             elif cat == 'Saves' and 'Goals Against' in stats and 'Save Percentage' in categories_to_short:
-                save_percentage = np.round(stats[cat] / (stats['Goals Against'] + stats[cat] + EPSILON) * 100.0, 1)
+                save_percentage = np.round(stats[cat] / (stats['Goals Against'] + stats[cat] + _epsilon) * 100.0, 1)
                 data_row.append(save_percentage)
                 columns_row.append(categories_to_short['Save Percentage'])
             elif cat == 'Minutes Played' and 'Goals Against' in stats and 'Goals Against Average' in categories_to_short:
-                gaa = np.round(stats['Goals Against'] * 60.0 / (stats[cat] + EPSILON), 2)
+                gaa = np.round(stats['Goals Against'] * 60.0 / (stats[cat] + _epsilon), 2)
                 data_row.append(gaa)
                 columns_row.append(categories_to_short['Goals Against Average'])
             elif cat == 'FPTS' and 'Skater Games Played' in stats:
-                fpg = np.round(stats[cat] / (stats['Skater Games Played'] + EPSILON), 1)
+                fpg = np.round(stats[cat] / (stats['Skater Games Played'] + _epsilon), 1)
                 data_row.append(fpg)
                 columns_row.append('FPG')
             elif cat == 'FPTS' and 'Games Started' in stats:
-                fpg = np.round(stats[cat] / (stats['Games Started'] + EPSILON), 1)
+                fpg = np.round(stats[cat] / (stats['Games Started'] + _epsilon), 1)
                 data_row.append(fpg)
                 columns_row.append('FPG')
 

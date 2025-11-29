@@ -12,13 +12,13 @@ from utils.globals import config, league_names, REPORT_TYPES
 
 
 _repo_root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
-_REPORTS_KEY_TO_DESCRIPTION = {
+_reports_key_to_description = {
     'matchup_stats': 'matchup stats',
     'active_stats': 'active stats',
     'analytics': 'analytics',
 }
 _sports_keys = ['basketball', 'hockey']
-_SPORTS_TO_DISPLAY = {
+_sports_to_display = {
     'hockey': 'NHL',
     'basketball': 'NBA',
 }
@@ -110,8 +110,8 @@ def save_index(index_config, is_archive):
                         continue
                     league_name = league_names()[sports][league_id]
                     league_link = f'{index_url_prefix}/{league_id}/index.html'
-                    reports_type_name = _REPORTS_KEY_TO_DESCRIPTION[report_type].capitalize()
-                    sports_display = _SPORTS_TO_DISPLAY[sports]
+                    reports_type_name = _reports_key_to_description[report_type].capitalize()
+                    sports_display = _sports_to_display[sports]
                     sports_indexes[sports_display][league_name].append([reports_type_name, league_link])
     else:
         today = datetime.datetime.today().date()
@@ -134,8 +134,8 @@ def save_index(index_config, is_archive):
                 _, latest_report_link = _get_season_reports(season_relative_path, github)
                 
                 league_name = league_names()[sports][league_id]
-                reports_type_name = _REPORTS_KEY_TO_DESCRIPTION[report_type].capitalize()
-                sports_display = _SPORTS_TO_DISPLAY[sports]
+                reports_type_name = _reports_key_to_description[report_type].capitalize()
+                sports_display = _sports_to_display[sports]
                 sports_indexes[sports_display][league_name].append([reports_type_name, latest_report_link])
 
     with open(os.path.join(_repo_root_dir, 'templates/index.html'), 'r', encoding='utf-8') as template_fp:
@@ -172,14 +172,14 @@ def save_reports_type_indexes():
         index_url_prefix = f'https://{github}.github.io/{reports_repo_name}/{reports_dir_name}'
         for sports in _sports_keys:
             for league_id in all_leagues[sports]:
-                league_name = f'{league_names()[sports][league_id]} ({_SPORTS_TO_DISPLAY[sports]})'
+                league_name = f'{league_names()[sports][league_id]} ({_sports_to_display[sports]})'
                 league_link = f'{index_url_prefix}/{sports}/{league_id}/index.html'
                 indexes[league_name] = league_link
         
         with open(os.path.join(_repo_root_dir, 'templates/type_index.html'), 'r', encoding='utf-8') as template_fp:
             template = Template(template_fp.read())
         html_str = template.render({
-            'title': f'Fantasy Fun Stuff ({_REPORTS_KEY_TO_DESCRIPTION[report_type]})',
+            'title': f'Fantasy Fun Stuff ({_reports_key_to_description[report_type]})',
             'indexes': indexes,
             'google_analytics_key': config()[report_type]['google_analytics_key']
         })
@@ -216,7 +216,7 @@ def save_league_index(league_settings):
             indexes_by_year.append([season_str, season_reports])
 
         html_str = template.render({
-            'title': f'Fantasy Fun Stuff ({_REPORTS_KEY_TO_DESCRIPTION[index_key]})',
+            'title': f'Fantasy Fun Stuff ({_reports_key_to_description[index_key]})',
             'index': main_index_url,
             'league_name': league_names()[sports][league_id],
             'league_link': f'https://fantasy.espn.com/{sports}/league?leagueId={league_id}',
@@ -245,9 +245,9 @@ def save_tables(sports, tables, total_tables, league_id, matchup, schedule, repo
     index_dir_name = config()[report_type]['dir_name']
     index_relative_path = os.path.join(index_repo_name, index_dir_name, sports, league_id, season_str)
     previous_reports_data = _get_previous_reports_data(index_relative_path, matchup, schedule, github)
-    title = f'{league_name} ({sports}). Matchup {matchup} {_REPORTS_KEY_TO_DESCRIPTION[report_type]}'
+    title = f'{league_name} ({sports}). Matchup {matchup} {_reports_key_to_description[report_type]}'
     html_str = template.render({
-        'header': f'Fantasy Fun Stuff ({_REPORTS_KEY_TO_DESCRIPTION[report_type]})',
+        'header': f'Fantasy Fun Stuff ({_reports_key_to_description[report_type]})',
         'title': title,
         'index': main_index_url,
         'matchup': matchup,

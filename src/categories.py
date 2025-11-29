@@ -12,7 +12,7 @@ import utils.globals
 
 
 _gk_category_lowers = {'GAA': np.inf, 'SV%': -np.inf, 'GA': np.inf}
-PLAYS_COLS = {'basketball': 'MIN', 'hockey': 'GP'}
+_plays_cols = {'basketball': 'MIN', 'hockey': 'GP'}
 
 
 def _apply_gk_rules(matchup_pairs, gk_games, gk_threshold):
@@ -134,7 +134,7 @@ def _export_overall_tables(matchup, categories, plays, scores, stats_pairs, leag
     plays_data = None
     if plays:
         plays_places = utils.common.get_places(plays, True)
-        plays_data = (PLAYS_COLS[league_settings['sports']], plays, plays_places)
+        plays_data = (_plays_cols[league_settings['sports']], plays, plays_places)
     stats = utils.categories.get_stats(stats_pairs[matchup - 1])
     opp_dict = utils.common.get_opponent_dict(stats_pairs[matchup - 1])
     places_data = utils.categories.get_places_data(stats, categories)
@@ -189,7 +189,7 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
         plays_data = None
         if plays:
             plays_places = utils.common.get_places(plays, True)
-            plays_data = (PLAYS_COLS[sports], plays, plays_places)
+            plays_data = (_plays_cols[sports], plays, plays_places)
         
         actual_gk_threshold = gk_threshold
         is_playoffs = schedule[matchup][-1]
