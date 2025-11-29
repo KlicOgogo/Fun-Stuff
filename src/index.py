@@ -89,8 +89,11 @@ def _process_leagues(global_res, leagues, sports_list, old_data_loaded_matchups,
             
             if box_scores_data:
                 for m in matchups_to_process:
-                    active_stats.export_reports(
-                        league_settings, schedule, m, scoreboard_data, box_scores_data, global_res)
+                    active_stats_tables = active_stats.calculate_tables(
+                        league_settings, m, scoreboard_data, box_scores_data, global_res['descriptions'])
+                    utils.common.save_tables(
+                        sports, active_stats_tables, [], main_league, league_names[sports][main_league],
+                        matchup, schedule, global_config, 'active stats')
             
             export_reports_function = functions_by_type[type_item]
             for m in matchups_to_process:

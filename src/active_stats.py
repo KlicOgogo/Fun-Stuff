@@ -1,7 +1,6 @@
 from collections import defaultdict
 
 import table.active_stats
-import utils.common
 
 
 _basketball_summarizable_cols = [
@@ -113,7 +112,7 @@ def _summarize(stats_list, sports):
     return stats_summarized
 
 
-def export_reports(league_settings, schedule, matchup, scoreboard_data, active_stats_data, global_resources):
+def calculate_tables(league_settings, matchup, scoreboard_data, active_stats_data, descriptions):
     leagues = league_settings['leagues'].split(',')
     leagues_names = []
     sports = league_settings['sports']
@@ -124,10 +123,8 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, active_s
         leagues_names.append(league_name)
 
         league_active_stats = active_stats_data[league_id]
-        tables = _export_league_tables(sports, matchup, league_active_stats, global_resources['descriptions'])
+        tables = _export_league_tables(sports, matchup, league_active_stats, descriptions)
         link = f'https://fantasy.espn.com/{sports}/league?leagueId={league_id}'
         leagues_tables.append([league_name, link, tables])
 
-    global_config = global_resources['config']
-    utils.common.save_tables(
-        sports, leagues_tables, [], leagues[0], leagues_names[0], matchup, schedule, global_config, 'active stats')
+    return leagues_tables
