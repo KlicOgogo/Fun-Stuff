@@ -44,6 +44,15 @@ def find_proper_matchup(schedule):
     return -1, False
 
 
+def _save_html(template_name, template_params, html_path):
+    template_path = os.path.join(_repo_root_dir, 'templates', f'{template_name}.html')
+    with open(template_path, 'r', encoding='utf-8') as template_fp:
+        template = Template(template_fp.read())
+    html_str = template.render(template_params)
+    with open(html_path, 'w', encoding='utf-8') as html_fp:
+        html_fp.write(html_str)
+
+
 def _get_previous_reports_data(index_relative_path, matchup, schedule, github):
     report_dir = os.path.join(_repo_root_dir, '..', index_relative_path)
     contents = [path for path in os.listdir(report_dir)] if os.path.isdir(report_dir) else []
@@ -96,66 +105,72 @@ def get_places(scores_dict, reverse):
         places[team] = 1 + np.mean(score_indexes)
     return places
 
-
-def save_index(report_types, global_config, index_config, league_names, is_archive):
+def save_archive(report_types, global_config, league_names):
     sports_indexes = defaultdict(lambda: defaultdict(list))
-    if is_archive:
-        for sports in _sports_keys:
-            for report_type in report_types:
-                github = global_config[report_type]['github']
-                reports_repo_name = global_config[report_type]['repo_name']
-                reports_dir_name = global_config[report_type]['dir_name']
-                reports_dir = os.path.join(_repo_root_dir, '..', reports_repo_name, reports_dir_name)
-                index_url_prefix = f'https://{github}.github.io/{reports_repo_name}/{reports_dir_name}/{sports}'
-                sports_reports_dir = os.path.join(reports_dir, sports)
-                if not os.path.isdir(sports_reports_dir):
+    for sports in _sports_keys:
+        for report_type in report_types:
+            github = global_config[report_type]['github']
+            reports_repo_name = global_config[report_type]['repo_name']
+            reports_dir_name = global_config[report_type]['dir_name']
+            reports_dir = os.path.join(_repo_root_dir, '..', reports_repo_name, reports_dir_name)
+            index_url_prefix = f'https://{github}.github.io/{reports_repo_name}/{reports_dir_name}/{sports}'
+            sports_reports_dir = os.path.join(reports_dir, sports)
+            if not os.path.isdir(sports_reports_dir):
+                continue
+            for league_id in os.listdir(sports_reports_dir):
+                if not os.path.isdir(os.path.join(sports_reports_dir, league_id)):
                     continue
-                for league_id in os.listdir(sports_reports_dir):
-                    if not os.path.isdir(os.path.join(sports_reports_dir, league_id)):
-                        continue
-                    league_name = league_names[sports][league_id]
-                    league_link = f'{index_url_prefix}/{league_id}/index.html'
-                    reports_type_name = report_type.capitalize()
-                    sports_display = _sports_to_display[sports]
-                    sports_indexes[sports_display][league_name].append([reports_type_name, league_link])
-    else:
-        today = datetime.datetime.today().date()
-        season_start_year = today.year if today.month > 6 else today.year - 1
-        season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
-        
-        for league_settings in index_config:
-            league_id = league_settings['leagues'].split(',')[0]
-            sports = league_settings['sports']
-            
-            for report_type in report_types:
-                github = global_config[report_type]['github']
-                reports_repo_name = global_config[report_type]['repo_name']
-                reports_dir_name = global_config[report_type]['dir_name']
-
-                season_relative_path = os.path.join(reports_repo_name, reports_dir_name, sports, league_id, season_str)
-                reports_dir = os.path.join(_repo_root_dir, '..', season_relative_path)
-                if not os.path.isdir(reports_dir):
-                    continue
-                _, latest_report_link = _get_season_reports(season_relative_path, github)
-                
                 league_name = league_names[sports][league_id]
+                league_link = f'{index_url_prefix}/{league_id}/index.html'
                 reports_type_name = report_type.capitalize()
                 sports_display = _sports_to_display[sports]
-                sports_indexes[sports_display][league_name].append([reports_type_name, latest_report_link])
+                sports_indexes[sports_display][league_name].append([reports_type_name, league_link])
 
-    with open(os.path.join(_repo_root_dir, 'templates/index.html'), 'r', encoding='utf-8') as template_fp:
-        template = Template(template_fp.read())
+    template_params = {
+        'title': 'Fantasy Fun Stuff (archive)',
+        'indexes': sports_indexes,
+        'archive_url': None,
+    }
+    repo = global_config['main_repo']
+    archive_path = os.path.join(_repo_root_dir, '..', repo, 'archive.html')
+    _save_html('index', template_params, archive_path)
+
+
+def save_homepage(report_types, global_config, index_config, league_names):
+    sports_indexes = defaultdict(lambda: defaultdict(list))
+    today = datetime.datetime.today().date()
+    season_start_year = today.year if today.month > 6 else today.year - 1
+    season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
+
+    for league_settings in index_config:
+        league_id = league_settings['leagues'].split(',')[0]
+        sports = league_settings['sports']
+
+        for report_type in report_types:
+            github = global_config[report_type]['github']
+            reports_repo_name = global_config[report_type]['repo_name']
+            reports_dir_name = global_config[report_type]['dir_name']
+
+            season_relative_path = os.path.join(reports_repo_name, reports_dir_name, sports, league_id, season_str)
+            reports_dir = os.path.join(_repo_root_dir, '..', season_relative_path)
+            if not os.path.isdir(reports_dir):
+                continue
+            _, latest_report_link = _get_season_reports(season_relative_path, github)
+
+            league_name = league_names[sports][league_id]
+            reports_type_name = report_type.capitalize()
+            sports_display = _sports_to_display[sports]
+            sports_indexes[sports_display][league_name].append([reports_type_name, latest_report_link])
+
     github = global_config['main_github']
     repo = global_config['main_repo']
-    html_str = template.render({
-        'title': 'Fantasy Fun Stuff (archive)' if is_archive else 'Fantasy Fun Stuff',
-        'active_indexes': sports_indexes,
-        'archive_url': None if is_archive else f'https://{github}.github.io/{repo}/archive.html',
-    })
-    filename = 'archive.html' if is_archive else 'homepage.html'
-    index_dir = os.path.join(_repo_root_dir, '..', repo)
-    with open(os.path.join(index_dir, filename), 'w', encoding='utf-8') as html_fp:
-        html_fp.write(html_str)
+    template_params = {
+        'title': 'Fantasy Fun Stuff',
+        'indexes': sports_indexes,
+        'archive_url': f'https://{github}.github.io/{repo}/archive.html',
+    }
+    homepage_path = os.path.join(_repo_root_dir, '..', repo, 'homepage.html')
+    _save_html('index', template_params, homepage_path)
 
 
 def save_reports_type_indexes(report_types, global_config, league_names):
@@ -181,15 +196,13 @@ def save_reports_type_indexes(report_types, global_config, league_names):
                 league_link = f'{index_url_prefix}/{sports}/{league_id}/index.html'
                 indexes[league_name] = league_link
         
-        with open(os.path.join(_repo_root_dir, 'templates/type_index.html'), 'r', encoding='utf-8') as template_fp:
-            template = Template(template_fp.read())
-        html_str = template.render({
+        template_params = {
             'title': f'Fantasy Fun Stuff ({report_type})',
             'indexes': indexes,
             'google_analytics_key': global_config[report_type]['google_analytics_key']
-        })
-        with open(os.path.join(reports_dir, 'index.html'), 'w', encoding='utf-8') as html_fp:
-            html_fp.write(html_str)
+        }
+        type_index_path = os.path.join(reports_dir, 'index.html')
+        _save_html('type_index', template_params, type_index_path)
 
 
 def save_league_index(league_name, league_settings, global_config):
@@ -199,8 +212,6 @@ def save_league_index(league_name, league_settings, global_config):
     index_keys = ['results', 'analytics'] if np.sum(enable_analytics_flags) != 0 else ['results']
     if league_settings['is_full_support']:
         index_keys.append('active stats')
-    with open(os.path.join(_repo_root_dir, 'templates/league_home.html'), 'r', encoding='utf-8') as template_fp:
-        template = Template(template_fp.read())
 
     main_github = global_config['main_github']
     main_repo = global_config['main_repo']
@@ -220,7 +231,7 @@ def save_league_index(league_name, league_settings, global_config):
             season_reports, _ = _get_season_reports(season_relative_path, github)
             indexes_by_year.append([season_str, season_reports])
 
-        html_str = template.render({
+        template_params = {
             'title': f'Fantasy Fun Stuff ({index_key})',
             'index': main_index_url,
             'league_name': league_name,
@@ -228,17 +239,15 @@ def save_league_index(league_name, league_settings, global_config):
             'sports': sports,
             'indexes_by_year': indexes_by_year,
             'google_analytics_key': global_config[index_key]['google_analytics_key']
-        })
-        with open(os.path.join(home_page_dir, 'index.html'), 'w', encoding='utf-8') as html_fp:
-            html_fp.write(html_str)
+        }
+        league_home_path = os.path.join(home_page_dir, 'index.html')
+        _save_html('league_home', template_params, league_home_path)
 
 
 def save_tables(sports, tables, total_tables, league_id, league_name, matchup, schedule, global_config, report_type):
     today = datetime.datetime.today().date()
     season_start_year = today.year if today.month > 6 else today.year - 1
     season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
-    with open(os.path.join(_repo_root_dir, 'templates/matchup_report.html'), 'r', encoding='utf-8') as template_fp:
-        template = Template(template_fp.read())
 
     main_github = global_config['main_github']
     main_repo = global_config['main_repo']
@@ -250,7 +259,7 @@ def save_tables(sports, tables, total_tables, league_id, league_name, matchup, s
     index_relative_path = os.path.join(index_repo_name, index_dir_name, sports, league_id, season_str)
     previous_reports_data = _get_previous_reports_data(index_relative_path, matchup, schedule, github)
     title = f'{league_name} ({sports}). Matchup {matchup} {report_type}'
-    html_str = template.render({
+    template_params = {
         'header': f'Fantasy Fun Stuff ({report_type})',
         'title': title,
         'index': main_index_url,
@@ -259,9 +268,8 @@ def save_tables(sports, tables, total_tables, league_id, league_name, matchup, s
         'total_tables': total_tables,
         'previous_reports': previous_reports_data,
         'google_analytics_key': global_config[report_type]['google_analytics_key']
-    })
+    }
     report_dir = os.path.join(_repo_root_dir, '..', index_relative_path)
     Path(report_dir).mkdir(parents=True, exist_ok=True)
     matchup_path = os.path.join(report_dir, f'matchup_{matchup}.html')
-    with open(matchup_path, 'w', encoding='utf-8') as html_fp:
-        html_fp.write(html_str)
+    _save_html ('matchup_report', template_params, matchup_path)

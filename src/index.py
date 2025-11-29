@@ -115,13 +115,13 @@ def _process_leagues(global_res, leagues, sports_list, old_data_loaded_matchups,
         }
 
 
-def _split_for_parallel(index_config, league_types, league_sizes, count):
+def _split_for_parallel(leagues_to_process, league_types, league_sizes, count):
     result_indexes = [[] for _ in range(count)]
     result_lengths = [0 for _ in range(count)]
 
     settings_grouped = [
         (league_settings, league_type, league_size)
-        for league_settings, league_type, league_size in zip(index_config, league_types, league_sizes)
+        for league_settings, league_type, league_size in zip(leagues_to_process, league_types, league_sizes)
     ]
     random.shuffle(settings_grouped)
     for single_settings in sorted(settings_grouped, reverse=True, key=itemgetter(2)):
@@ -137,28 +137,29 @@ def _split_for_parallel(index_config, league_types, league_sizes, count):
 def main(global_res):
     global_config = global_res['config']
     sports_list = ['basketball', 'hockey']
-    types_list = ['categories', 'points']
+    types_to_process = all_types = ['categories', 'points']
     for arg in sys.argv[1:]:
-        if arg in types_list:
-            types_list = [arg]
+        if arg in types_to_process:
+            types_to_process = [arg]
         if arg in sports_list:
             sports_list = [arg]
 
-    index_config = []
+    leagues_to_process = []
     index_types = []
     index_sizes = []
-    leagues_settings = {}
-    for type_item in types_list:
+    leagues_settings = []
+    for type_item in all_types:
         leagues_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', f'res/{type_item}.json')
         leagues = json_load(leagues_path)
-        leagues_settings[type_item] = leagues
-        index_config.extend(leagues)
-        index_types.extend([type_item] * len(leagues))
-        index_sizes.extend([l['leagues'].count(',') + 1 for l in leagues])
+        leagues_settings.extend(leagues)
+        if type_item in types_to_process:
+            leagues_to_process.extend(leagues)
+            index_types.extend([type_item] * len(leagues))
+            index_sizes.extend([l['leagues'].count(',') + 1 for l in leagues])
 
     n_jobs = global_config['n_jobs']
     sleep_timeout = global_config['timeout']
-    settings_splitted = _split_for_parallel(index_config, index_types, index_sizes, n_jobs)
+    settings_splitted = _split_for_parallel(leagues_to_process, index_types, index_sizes, n_jobs)
 
     league_names_path = os.path.join(_repo_root_dir, 'res/league_names.json')
     league_names = json_load(league_names_path, defaultdict(dict))
@@ -209,8 +210,8 @@ def main(global_res):
             raise error
 
     report_types = global_config['report_types']
-    utils.common.save_index(report_types, global_config, index_config, league_names, is_archive=True)
-    utils.common.save_index(report_types, global_config, index_config, league_names, is_archive=False)
+    utils.common.save_homepage(report_types, global_config, leagues_settings, league_names)
+    utils.common.save_archive(report_types, global_config, league_names)
     utils.common.save_reports_type_indexes(report_types, global_config, league_names)
 
 if __name__ == '__main__':

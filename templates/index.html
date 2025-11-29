@@ -107,7 +107,7 @@
 	<body align="center">
 		<title>{{ title }}</title>
         <h1>{{ title }}</h1>
-		{%- for sports, sports_indexes in active_indexes.items() %}
+		{%- for sports, sports_indexes in indexes.items() %}
 			<h2>{{ sports }}</h2>
 			{%- for league_name, league_links in sports_indexes|dictsort %}
 			<button class="collapsible"><h3>{{ league_name }}</h3></button>
