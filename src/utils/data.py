@@ -287,7 +287,7 @@ def gk_games(matchup_box_scores_data):
     return gk_games if np.sum(list(gk_games.values())) != 0 else None
 
 
-def _matchup_category_pairs(sports, scoreboard_html, league_id, league_name, team_names):
+def _matchup_category_pairs(scoreboard_html, league_id, league_name, team_names):
     pairs = []
     for scoreboard_row in scoreboard_html.findAll('div', {'class': 'Scoreboard__Row'}):
         opponents = scoreboard_row.findAll('li', 'ScoreboardScoreCell__Item')
@@ -401,6 +401,6 @@ def scoreboard(league_id, sports, matchup, browser, online_matchups, is_category
     for m in range(matchup):
         scores.append(_get_matchup_scores(soups[m], team_names, league_id, league_name))
         if is_category_league:
-            matchup_category_pairs = _matchup_category_pairs(sports, soups[m], league_id, league_name, team_names)
+            matchup_category_pairs = _matchup_category_pairs(soups[m], league_id, league_name, team_names)
             category_pairs.append(matchup_category_pairs)
     return scores, team_names, category_pairs, league_name

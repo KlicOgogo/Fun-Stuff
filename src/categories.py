@@ -12,6 +12,7 @@ import utils.globals
 
 
 _gk_category_lowers = {'GAA': np.inf, 'SV%': -np.inf, 'GA': np.inf}
+_less_to_win_categories = ['TO', 'GAA', 'GA', 'PF']
 _plays_cols = {'basketball': 'MIN', 'hockey': 'GP'}
 
 
@@ -55,7 +56,7 @@ def _get_each_category_stats(league, league_settings, schedule, matchup, categor
         matchup_pairs = _apply_gk_rules(matchup_pairs, gk_games, actual_gk_threshold)
         opp_dict = utils.common.get_opponent_dict(matchup_pairs)
         stats = utils.categories.get_stats(matchup_pairs)
-        places_data = utils.categories.get_places_data(stats, categories)
+        places_data = utils.categories.get_places_data(stats, categories, _less_to_win_categories)
         for team in places_data:
             for cat, place, opp_place in zip(categories, places_data[team], places_data[opp_dict[team]]):
                 each_category_places[cat][team].append(place)
@@ -137,18 +138,19 @@ def _export_overall_tables(matchup, categories, plays, scores, stats_pairs, leag
         plays_data = (_plays_cols[league_settings['sports']], plays, plays_places)
     stats = utils.categories.get_stats(stats_pairs[matchup - 1])
     opp_dict = utils.common.get_opponent_dict(stats_pairs[matchup - 1])
-    places_data = utils.categories.get_places_data(stats, categories)
-    comparisons = utils.categories.get_comparison_stats(stats, categories, tiebreaker)
-    expected_info = utils.categories.get_expected_score_and_result(stats, opp_dict, categories, tiebreaker)
+    places_data = utils.categories.get_places_data(stats, categories, _less_to_win_categories)
+    comparisons = utils.categories.get_comparison_stats(stats, categories, _less_to_win_categories, tiebreaker)
+    expected_info = utils.categories.get_expected_score_and_result(
+        stats, opp_dict, categories, _less_to_win_categories, tiebreaker)
     expected_data = expected_info[0] if league_settings['is_each_category'] else expected_info[1]
     overall_tables.append([titles['matchup_overall'], desc['matchup_overall'],
         table.categories.matchup(
             categories, stats, scores, plays_data, places_data, comparisons, expected_data,
-            n_last, utils.categories.LESS_TO_WIN_CATEGORIES)])
+            n_last, _less_to_win_categories)])
 
     places = defaultdict(list)
     for m in range(matchup):
-        matchup_places_sum = utils.categories.get_places_sum(stats_pairs[m], categories)
+        matchup_places_sum = utils.categories.get_places_sum(stats_pairs[m], categories, _less_to_win_categories)
         places_sum_places = utils.common.get_places(matchup_places_sum, False)
         for team in places_sum_places:
             places[team].append(places_sum_places[team])
@@ -199,9 +201,10 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
         matchup_pairs = _apply_gk_rules(matchup_pairs, gk_games, actual_gk_threshold)
         stats = utils.categories.get_stats(matchup_pairs)
         opp_dict = utils.common.get_opponent_dict(matchup_pairs)
-        places_data = utils.categories.get_places_data(stats, categories)
-        comparisons = utils.categories.get_comparison_stats(stats, categories, tiebreaker)
-        expected_info = utils.categories.get_expected_score_and_result(stats, opp_dict, categories, tiebreaker)
+        places_data = utils.categories.get_places_data(stats, categories, _less_to_win_categories)
+        comparisons = utils.categories.get_comparison_stats(stats, categories, _less_to_win_categories, tiebreaker)
+        expected_info = utils.categories.get_expected_score_and_result(
+            stats, opp_dict, categories, _less_to_win_categories, tiebreaker)
         exp_data = expected_info[0] if is_each_category else expected_info[1]
 
         tables = []
@@ -210,7 +213,7 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
         tables.append([titles['matchup'], desc['matchup'],
             table.categories.matchup(
                 categories, stats, scores_data, plays_data, places_data, comparisons, exp_data,
-                n_last, utils.categories.LESS_TO_WIN_CATEGORIES)])
+                n_last, _less_to_win_categories)])
 
         places = defaultdict(list)
         opp_places = defaultdict(list)
@@ -236,22 +239,25 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
             opp_dict = utils.common.get_opponent_dict(stats_pairs)
             overall_stats_pairs[m].extend(stats_pairs)
             
-            matchup_places_sum = utils.categories.get_places_sum(stats_pairs, categories)
+            matchup_places_sum = utils.categories.get_places_sum(stats_pairs, categories, _less_to_win_categories)
             matchup_places = utils.common.get_places(matchup_places_sum, False)
             for team in matchup_places:
                 places[team].append(matchup_places[team])
                 opp_places[team].append(matchup_places[opp_dict[team]])
             
             stats = utils.categories.get_stats(stats_pairs)
-            comparison_stats = utils.categories.get_comparison_stats(stats, categories, tiebreaker)
+            comparison_stats = utils.categories.get_comparison_stats(
+                stats, categories, _less_to_win_categories, tiebreaker)
             for team in comparison_stats:
                 comparisons[team].append('-'.join(map(str, comparison_stats[team])))
                 opp_comparisons[team].append('-'.join(map(str, comparison_stats[opp_dict[team]])))
             
             for team in opp_dict:
-                result = utils.categories.get_pair_result(stats[team], stats[opp_dict[team]], categories, tiebreaker)
+                result = utils.categories.get_pair_result(
+                    stats[team], stats[opp_dict[team]], categories, _less_to_win_categories, tiebreaker)
                 win_record[team][result] += 1
-            expected_data = utils.categories.get_expected_score_and_result(stats, opp_dict, categories, tiebreaker)
+            expected_data = utils.categories.get_expected_score_and_result(
+                stats, opp_dict, categories, _less_to_win_categories, tiebreaker)
             expected_score, expected_result = expected_data
             for team in expected_score:
                 expected_each_category_stats[team].append(expected_score[team])
@@ -260,9 +266,11 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
             tiebreaker = league_settings['tiebreaker']
             for team in stats:
                 for opp in stats:
-                    if team != opp:
-                        h2h_res = utils.categories.get_pair_result(stats[team], stats[opp], categories, tiebreaker)
-                        comparisons_h2h[team][opp][h2h_res] += 1
+                    if team == opp:
+                        continue
+                    h2h_res = utils.categories.get_pair_result(
+                        stats[team], stats[opp], categories, _less_to_win_categories, tiebreaker)
+                    comparisons_h2h[team][opp][h2h_res] += 1
 
         matchups = np.arange(1, matchup + 1)
         tables.append([titles['places'], desc['places'],
@@ -271,11 +279,9 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
             table.common.places(opp_places, matchups, True, False, n_last)])
 
         tables.append([titles['pairwise_matchup'], desc['pairwise_matchup'],
-            table.categories.comparisons(
-                comparisons, matchups, False, n_last, utils.categories.LESS_TO_WIN_CATEGORIES)])
+            table.categories.comparisons(comparisons, matchups, False, n_last, _less_to_win_categories)])
         tables.append([titles['pairwise_matchup_opp'], desc['pairwise_matchup_opp'],
-            table.categories.comparisons(
-                opp_comparisons, matchups, True, n_last, utils.categories.LESS_TO_WIN_CATEGORIES)])
+            table.categories.comparisons(opp_comparisons, matchups, True, n_last, _less_to_win_categories)])
         tables.append([titles['pairwise_h2h'], desc['pairwise_h2h'], table.common.h2h(comparisons_h2h)])
         if is_each_category:
             each_category_stats = {}
@@ -288,8 +294,7 @@ def export_reports(league_settings, schedule, matchup, scoreboard_data, box_scor
                             each_category_stats[sc[i][0]] += np.array(list(map(float, sc[i][1].split('-'))))
             table_stats = (each_category_stats, expected_each_category_stats)
             tables.append([titles['expected_cat'], desc['expected_cat'],
-                table.categories.expected_each_category_stats(
-                    *table_stats, matchup, n_last, utils.categories.LESS_TO_WIN_CATEGORIES)])
+                table.categories.expected_each_category_stats(*table_stats, matchup, n_last, _less_to_win_categories)])
         else:
             tables.append([titles['expected_win'], desc['expected_win'],
                 table.categories.expected_win_stats(win_record, expected_win_record, matchups)])
