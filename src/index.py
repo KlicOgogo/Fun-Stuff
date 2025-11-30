@@ -191,7 +191,7 @@ def main(global_res):
         json_dump(data_loaded_matchups, data_loaded_matchups_path)
 
         if 'error' in names_and_matchups:
-            raise names_and_matchups[e]
+            raise names_and_matchups['error']
     else:
         pool = ThreadPool(n_jobs)
         process_params = [

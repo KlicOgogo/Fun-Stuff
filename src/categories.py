@@ -12,9 +12,11 @@ import utils.data
 
 _less_to_win_categories = ['TO', 'GAA', 'GA', 'PF']
 _plays_cols = {'basketball': 'MIN', 'hockey': 'GP'}
+_plays_getters = {'basketball': utils.data.minutes, 'hockey': utils.data.player_games}
+_plays_names = {'basketball': 'minutes', 'hockey': 'games'}
 
 
-def _analytics_tables(league_settings, schedule, matchup, scoreboard_data, box_scores_data, global_resources):
+def _analytics_tables(league_settings, schedule, matchup, scoreboards, box_scores, global_resources):
     leagues = league_settings['leagues'].split(',')
     analytics_enabled_flags = map(int, league_settings['is_analytics_enabled'].split(','))
     sports = league_settings['sports']
@@ -28,10 +30,10 @@ def _analytics_tables(league_settings, schedule, matchup, scoreboard_data, box_s
         if not is_analytics_enabled:
             continue
 
-        _, team_names, category_pairs, league_name = scoreboard_data[league]
+        _, team_names, category_pairs, league_name = scoreboards[league]
         gk_games_per_matchup = None
-        if box_scores_data is not None:
-            league_box_scores = box_scores_data[league]
+        if box_scores is not None:
+            league_box_scores = box_scores[league]
             gk_games_per_matchup = []
             for m in range(matchup):
                 matchup_gk_games = utils.data.goalkeeper_games(league_box_scores[m])
@@ -128,11 +130,46 @@ def _overall_tables(matchup, categories, plays, scores, stats_pairs, league_sett
     return overall_tables
 
 
-def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_scores_data, global_resources):
+def _plays_tables(sports, matchups, league_box_scores, global_resources):
+    if league_box_scores is None:
+        return []
+
+    plays = defaultdict(list)
+    plays_places = defaultdict(list)
+    for matchup in matchups:
+        matchup_box_scores_data = league_box_scores[matchup - 1]
+        plays_matchup = _plays_getters[sports](matchup_box_scores_data)
+        if not plays_matchup:
+            raise Exception('Matchup plays for categories not found.')
+
+        for team, value in plays_matchup.items():
+            plays[team].append(value)
+        matchup_places = utils.common.get_places(plays_matchup, reverse=True)
+        for team, value in matchup_places.items():
+            plays_places[team].append(value)
+
     n_last = global_resources['config']['n_last_matchups']
     titles = global_resources['titles']
     descriptions = global_resources['descriptions']
-    plays_getters = {'basketball': utils.data.minutes, 'hockey': utils.data.player_games}
+
+    table_key = _plays_names[sports]
+    plays_tables = [
+        [
+            titles[table_key], descriptions[table_key],
+            table.common.scores(plays, matchups, False, n_last)
+        ],
+        [
+            titles[f'{table_key}_places'], descriptions[f'{table_key}_places'],
+            table.common.places(plays_places, matchups, False, False, n_last)
+        ],
+    ]
+    return plays_tables
+
+
+def calculate_tables(league_settings, schedule, matchup, scoreboards, box_scores, global_resources):
+    n_last = global_resources['config']['n_last_matchups']
+    titles = global_resources['titles']
+    descriptions = global_resources['descriptions']
     is_each_category = league_settings['is_each_category']
     leagues = league_settings['leagues'].split(',')
     sports = league_settings['sports']
@@ -140,19 +177,19 @@ def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_sc
     gk_threshold = league_settings['gk_threshold'] if 'gk_threshold' in league_settings else None
     is_playoffs_double_gk_threshold = league_settings.get('is_playoffs_double_gk_threshold', False)
 
-    has_scoreboards = scoreboard_data is not None
+    has_box_scores = box_scores is not None
     leagues_tables = []
-    overall_plays = {} if has_scoreboards else None
+    overall_plays = {} if has_box_scores else None
     overall_scores = []
     overall_stats_pairs = [[] for _ in range(matchup)]
     for league in leagues:
-        scores, _, category_pairs, league_name = scoreboard_data[league]
+        scores, _, category_pairs, league_name = scoreboards[league]
         matchup_scores = scores[matchup - 1]
         overall_scores.extend(matchup_scores)
         
-        plays = plays_getters[sports](box_scores_data[league][matchup - 1]) if has_scoreboards else None
+        plays = _plays_getters[sports](box_scores[league][matchup - 1]) if has_box_scores else None
         plays_places = utils.common.get_places(plays, reverse=True) if plays is not None else None
-        gk_games = utils.data.goalkeeper_games(box_scores_data[league][matchup - 1]) if has_scoreboards else None
+        gk_games = utils.data.goalkeeper_games(box_scores[league][matchup - 1]) if has_box_scores else None
         overall_plays = overall_plays | plays if plays is not None else overall_plays
 
         actual_gk_threshold = gk_threshold
@@ -203,15 +240,12 @@ def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_sc
         comparisons_h2h = defaultdict(lambda: defaultdict(Counter))
         for m in range(matchup):
             current_matchup = m + 1
-            gk_games = None
-            if is_full_support:
-                matchup_box_scores_data = box_scores_data[league][m]
-                gk_games = utils.data.goalkeeper_games(matchup_box_scores_data)
-            
+            gk_games = utils.data.goalkeeper_games(box_scores[league][m]) if has_box_scores else None
             actual_gk_threshold = gk_threshold
             is_playoffs = schedule[current_matchup][-1]
             if is_playoffs_double_gk_threshold and is_playoffs:
                 actual_gk_threshold = gk_threshold if gk_threshold is None else 2 * gk_threshold
+
             stats_pairs, _ = category_pairs[m]
             stats_pairs = utils.categories.apply_gk_rules(stats_pairs, gk_games, actual_gk_threshold)
             opp_dict = utils.common.get_opponent_dict(stats_pairs)
@@ -270,6 +304,7 @@ def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_sc
         tables.append([
             titles['pairwise_h2h'], descriptions['pairwise_h2h'],
             table.common.h2h(comparisons_h2h)])
+
         if is_each_category:
             category_record = {}
             for m in range(matchup):
@@ -288,36 +323,13 @@ def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_sc
                 titles['expected_win'], descriptions['expected_win'],
                 table.categories.expected_win_stats(win_record, expected_win_record, matchups)])
         
-        if is_full_support:
-            plays = defaultdict(list)
-            plays_places = defaultdict(list)
-            has_plays = False
-            for m in range(matchup):
-                current_matchup = m + 1
-                matchup_box_scores_data = box_scores_data[league][m]
-                plays_matchup = plays_getters[sports](matchup_box_scores_data)
-                if plays_matchup:
-                    has_plays = True
-                    for team, value in plays_matchup.items():
-                        plays[team].append(value)
-                    matchup_places = utils.common.get_places(plays_matchup, True)
-                    for team, value in matchup_places.items():
-                        plays_places[team].append(value)
-            if has_plays:
-                key_dict = {'basketball': 'minutes', 'hockey': 'games'}
-                table_key = key_dict[sports]
-                tables.append([
-                    titles[table_key], descriptions[table_key],
-                    table.common.scores(plays, matchups, False, n_last)])
-                tables.append([
-                    titles[f'{table_key}_places'], descriptions[f'{table_key}_places'],
-                    table.common.places(plays_places, matchups, False, False, n_last)])
-
+        league_box_scores = box_scores[league] if has_box_scores else None
+        plays_tables = _plays_tables(sports, matchups, league_box_scores, global_resources)
         league_link = f'https://fantasy.espn.com/{sports}/league?leagueId={league}'
-        leagues_tables.append([league_name, league_link, tables])
+        leagues_tables.append([league_name, league_link, tables + plays_tables])
 
     analytics_tables = _analytics_tables(
-        league_settings, schedule, matchup, scoreboard_data, box_scores_data, global_resources)
+        league_settings, schedule, matchup, scoreboards, box_scores, global_resources)
     overall_tables = []
     if len(leagues) > 1:
         overall_tables = _overall_tables(matchup, categories, overall_plays,
