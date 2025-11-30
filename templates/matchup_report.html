@@ -74,10 +74,10 @@
 	{%- endfor %}
 {%- endfor %}
 
-	{%- if total_tables|length > 0 %}
+	{%- if overall_tables|length > 0 %}
 		<h2>Summary</h2>
 	{%- endif %}
-	{%- for caption, description, table in total_tables %}
+	{%- for caption, description, table in overall_tables %}
 		&nbsp;
 		<button class="collapsible"><h3 title="{{ description }}">{{ caption }}</h3></button>
 		<div class="content" style="overflow-x:auto;">

@@ -88,45 +88,54 @@ def _analytics_tables(league_settings, schedule, matchup, scoreboards, box_score
 
 
 def _overall_tables(matchup, categories, plays, scores, stats_pairs, league_settings, global_resources):
-    n_last = global_resources['config']['n_last_matchups']
     titles = global_resources['titles']
     descriptions = global_resources['descriptions']
     tiebreaker = league_settings['tiebreaker']
 
-    overall_tables = []
-    plays_data = None
-    if plays:
-        plays_places = utils.common.get_places(plays, True)
-        plays_data = (_plays_cols[league_settings['sports']], plays, plays_places)
     stats = utils.categories.get_stats(stats_pairs[matchup - 1])
-    opponent_dict = utils.common.get_opponent_dict(stats_pairs[matchup - 1])
+    stats_with_plays = utils.categories.join_stats_and_plays(stats, plays)
+    
     places_data = utils.categories.get_places_data(stats, categories, _less_to_win_categories)
-    comparisons = utils.categories.get_comparison_stats(stats, categories, _less_to_win_categories, tiebreaker)
+    places_sum = utils.categories.get_places_sum(stats_pairs[matchup - 1], categories, _less_to_win_categories)
+    plays_places = utils.common.get_places(plays, reverse=True) if plays is not None else None
+    places_with_plays = utils.categories.join_stats_and_plays(places_data, plays_places)
+    plays_columns = [_plays_cols[league_settings['sports']]] if plays is not None else []
+    categories_with_plays = plays_columns + categories
 
     expected_score = utils.categories.get_expected_score(stats, categories, _less_to_win_categories)
     tiebreaker_stats = utils.categories.get_tiebreaker_expectation(
         stats, categories, _less_to_win_categories, tiebreaker)
+    opponent_dict = utils.common.get_opponent_dict(stats_pairs[matchup - 1])
     expected_result = utils.categories.get_expected_result(expected_score, tiebreaker_stats, opponent_dict)
     expectations = expected_score if league_settings['is_each_category'] else expected_result
     expectations_column_name = 'ExpScore' if league_settings['is_each_category'] else 'ER'
+    comparisons = utils.categories.get_comparison_stats(stats, categories, _less_to_win_categories, tiebreaker)
     metrics = {
         'Score': scores,
         expectations_column_name: expectations,
         'TP': comparisons,
     }
-    overall_tables.append([
-        titles['matchup_overall'], descriptions['matchup_overall'],
-        table.categories.matchup(categories, stats, plays_data, places_data, _less_to_win_categories, metrics)])
 
-    places = defaultdict(list)
+    all_leagues_places = defaultdict(list)
     for m in range(matchup):
         matchup_places_sum = utils.categories.get_places_sum(stats_pairs[m], categories, _less_to_win_categories)
         places_sum_places = utils.common.get_places(matchup_places_sum, False)
         for team in places_sum_places:
-            places[team].append(places_sum_places[team])
-    overall_tables.append([
-        titles['places_overall'], descriptions['places_overall'],
-        table.common.places(places, np.arange(1, matchup + 1), False, True, n_last)])
+            all_leagues_places[team].append(places_sum_places[team])
+    n_last = global_resources['config']['n_last_matchups']
+    
+    overall_tables = [
+        [
+            titles['matchup_overall'], descriptions['matchup_overall'],
+            table.categories.matchup(
+                stats_with_plays, places_with_plays, places_sum,
+                categories_with_plays, _less_to_win_categories, metrics)
+        ],
+        [
+            titles['places_overall'], descriptions['places_overall'],
+            table.common.places(all_leagues_places, np.arange(1, matchup + 1), False, True, n_last)
+        ],
+    ]
     return overall_tables
 
 
@@ -201,7 +210,7 @@ def calculate_tables(league_settings, schedule, matchup, scoreboards, box_scores
 
         stats = utils.categories.get_stats(matchup_pairs)
         places_data = utils.categories.get_places_data(stats, categories, _less_to_win_categories)
-        places_sum = {team: np.sum(team_places) for team, team_places in places_data.items()}
+        places_sum = utils.categories.get_places_sum(matchup_pairs, categories, _less_to_win_categories)
         stats_with_plays = utils.categories.join_stats_and_plays(stats, plays)
         places_with_plays = utils.categories.join_stats_and_plays(places_data, plays_places)
         plays_columns = [_plays_cols[league_settings['sports']]] if plays is not None else []
@@ -333,7 +342,7 @@ def calculate_tables(league_settings, schedule, matchup, scoreboards, box_scores
     overall_tables = []
     if len(leagues) > 1:
         overall_tables = _overall_tables(matchup, categories, overall_plays,
-            overall_scores, overall_stats_pairs, league_settings)
+            overall_scores, overall_stats_pairs, league_settings, global_resources)
 
     return {
         'results': {'leagues': leagues_tables, 'overall_tables': overall_tables},
