@@ -64,8 +64,8 @@ def h2h_category_record(places_by_categories, categories, my_team_key, n_last):
         for team in places_by_categories[category]:
             if team == my_team_key:
                 continue
-            opponent_places = np.array(places_by_categories[category][team])
 
+            opponent_places = np.array(places_by_categories[category][team])
             wins = (my_team_places < opponent_places).sum()
             losses = (my_team_places > opponent_places).sum()
             draws = (my_team_places == opponent_places).sum()
@@ -90,8 +90,8 @@ def h2h_category_record(places_by_categories, categories, my_team_key, n_last):
 
     percentage_cols = [f'L{n_last}%', '%']
     df_teams = pd.DataFrame(list(map(itemgetter(0), df_data.keys())), index=df_data.keys(), columns=['Team'])
-    df_stats = pd.DataFrame(
-        list(df_data.values()), index=df_data.keys(), columns=[*categories, 'W  ', 'L', 'D', *percentage_cols])
+    df_stats = pd.DataFrame(list(df_data.values()), index=df_data.keys(),
+                            columns=[*categories, 'W  ', 'L', 'D', *percentage_cols])
     df = df_teams.merge(df_stats, how='outer', left_index=True, right_index=True)
     df = df.iloc[np.lexsort((-df['W  '], -df[f'L{n_last}%'], -df['%']))]
     df = common.add_position_column(df)
