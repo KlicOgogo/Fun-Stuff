@@ -152,12 +152,16 @@ def _export_overall_tables(matchup, categories, plays, scores, stats_pairs, leag
     expected_score = utils.categories.get_expected_score(stats, categories, _less_to_win_categories)
     tiebreaker_stats = utils.categories.get_tiebreaker_stats(stats, categories, _less_to_win_categories, tiebreaker)
     expected_result = utils.categories.get_expected_result(expected_score, tiebreaker_stats, opp_dict)
-    expected_data = expected_score if league_settings['is_each_category'] else expected_result
-
+    expectations = expected_score if league_settings['is_each_category'] else expected_result
+    expectations_column_name = 'ExpScore' if league_settings['is_each_category'] else 'ER'
+    metrics = {
+        'Score': scores,
+        expectations_column_name: expectations,
+        'TP': comparisons,
+    }
     overall_tables.append([
         titles['matchup_overall'], descriptions['matchup_overall'],
-        table.categories.matchup(
-            categories, stats, scores, plays_data, places_data, comparisons, expected_data, _less_to_win_categories)])
+        table.categories.matchup(categories, stats, plays_data, places_data, _less_to_win_categories, metrics)])
 
     places = defaultdict(list)
     for m in range(matchup):
@@ -194,8 +198,8 @@ def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_sc
     for league in leagues:
         scores, _, category_pairs, league_name = scoreboard_data[league]
         leagues_names.append(league_name)
-        scores_data = scores[matchup - 1]
-        overall_scores.extend(scores_data)
+        matchup_scores = scores[matchup - 1]
+        overall_scores.extend(matchup_scores)
         
         plays = None
         gk_games = None
@@ -226,21 +230,24 @@ def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_sc
             stats, categories, _less_to_win_categories, tiebreaker)
         matchup_expected_result = utils.categories.get_expected_result(
             matchup_expected_score, matchup_tiebreaker_stats, opp_dict)
-        matchup_expected_data = matchup_expected_score \
+        matchup_expectations = matchup_expected_score \
             if league_settings['is_each_category'] else matchup_expected_result
-
+        expectations_column_name = 'ExpScore' if league_settings['is_each_category'] else 'ER'
+        metrics = {
+            'Score': matchup_scores,
+            expectations_column_name: matchup_expectations,
+            'TP': comparisons,
+        }
         tables = []
         tables.append([
             titles['matchup'], descriptions['matchup'],
-            table.categories.matchup(
-                categories, stats, scores_data, plays_data, places_data, comparisons, matchup_expected_data,
-                _less_to_win_categories)])
+            table.categories.matchup(categories, stats, plays_data, places_data, _less_to_win_categories, metrics)])
 
         places = defaultdict(list)
         opp_places = defaultdict(list)
         comparisons = defaultdict(list)
         opp_comparisons = defaultdict(list)
-        expected_each_category_stats = defaultdict(list)
+        expected_category_record = defaultdict(list)
         win_record = defaultdict(Counter)
         expected_win_record = defaultdict(list)
         comparisons_h2h = defaultdict(lambda: defaultdict(Counter))
@@ -283,7 +290,7 @@ def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_sc
             expected_result = utils.categories.get_expected_result(expected_score, tiebreaker_stats, opp_dict)
 
             for team in expected_score:
-                expected_each_category_stats[team].append(expected_score[team])
+                expected_category_record[team].append(expected_score[team])
                 expected_win_record[team].append(expected_result[team])
 
             tiebreaker = league_settings['tiebreaker']
@@ -305,26 +312,26 @@ def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_sc
 
         tables.append([
             titles['pairwise_matchup'], descriptions['pairwise_matchup'],
-            table.categories.comparisons(comparisons, matchups, False, n_last, _less_to_win_categories)])
+            table.categories.pairwise_comparisons(comparisons, matchups, False, n_last, _less_to_win_categories)])
         tables.append([
             titles['pairwise_matchup_opp'], descriptions['pairwise_matchup_opp'],
-            table.categories.comparisons(opp_comparisons, matchups, True, n_last, _less_to_win_categories)])
+            table.categories.pairwise_comparisons(opp_comparisons, matchups, True, n_last, _less_to_win_categories)])
         tables.append([
             titles['pairwise_h2h'], descriptions['pairwise_h2h'],
             table.common.h2h(comparisons_h2h)])
         if is_each_category:
-            each_category_stats = {}
+            category_record = {}
             for m in range(matchup):
                 for sc in scores[m]:
                     for i in range(len(sc)):
-                        if sc[i][0] not in each_category_stats:
-                            each_category_stats[sc[i][0]] = np.array(list(map(float, sc[i][1].split('-'))))
+                        if sc[i][0] not in category_record:
+                            category_record[sc[i][0]] = np.array(list(map(float, sc[i][1].split('-'))))
                         else:
-                            each_category_stats[sc[i][0]] += np.array(list(map(float, sc[i][1].split('-'))))
-            table_stats = (each_category_stats, expected_each_category_stats)
+                            category_record[sc[i][0]] += np.array(list(map(float, sc[i][1].split('-'))))
             tables.append([
                 titles['expected_cat'], descriptions['expected_cat'],
-                table.categories.expected_each_category_stats(*table_stats, matchup, n_last, _less_to_win_categories)])
+                table.categories.expected_category_stats(
+                    category_record, expected_category_record, matchup, _less_to_win_categories)])
         else:
             tables.append([
                 titles['expected_win'], descriptions['expected_win'],

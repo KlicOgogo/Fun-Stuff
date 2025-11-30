@@ -51,7 +51,7 @@ def _get_extremums(df, less_to_win_categories, is_opponent, n_last=None):
     return best, worst
 
 
-def comparisons(comparisons_data, matchups, is_opponent, n_last, less_to_win_categories):
+def pairwise_comparisons(comparisons_data, matchups, is_opponent, n_last, less_to_win_categories):
     df_data = copy.deepcopy(comparisons_data)
     for team in df_data:
         team_stats = [np.array(list(map(int, score.split('-')))) for score in df_data[team]]
@@ -82,7 +82,7 @@ def comparisons(comparisons_data, matchups, is_opponent, n_last, less_to_win_cat
     return styler.to_html()
 
 
-def expected_each_category_stats(data, expected_data, matchup, less_to_win_categories):
+def expected_category_stats(data, expected_data, matchup, less_to_win_categories):
     df_data = copy.deepcopy(expected_data)
     for team in df_data:
         team_stats_array = np.vstack(df_data[team])
@@ -90,7 +90,7 @@ def expected_each_category_stats(data, expected_data, matchup, less_to_win_categ
         df_data[team].append(data[team])
         df_data[team].extend(map(lambda x: np.round(x, 1), df_data[team][-1] - df_data[team][-2]))
         for i in range(len(df_data[team]) - 3):
-            df_data[team][i] = '-'.join(map(lambda x: f'{np.round(x, 1):g}', df_data[team][i][:3]))
+            df_data[team][i] = '-'.join(map(lambda x: f'{x:.1f}', df_data[team][i][:3]))
         df_data[team].append(df_data[team][-3] + 0.5 * df_data[team][-1])
 
     df_teams = pd.DataFrame(list(map(itemgetter(0), df_data.keys())), index=df_data.keys(), columns=['Team'])
@@ -134,7 +134,7 @@ def expected_win_stats(data, expected_data, matchups):
     return styler.to_html()
 
 
-def matchup(categories, stats_data, matchup_scores, plays_data, places_data, comparisons, expected_data, less_to_win_categories):
+def matchup(categories, stats_data, plays_data, places_data, less_to_win_categories, metrics):
     is_overall = len(set(map(itemgetter(2), stats_data.keys()))) > 1
     df = pd.DataFrame(list(map(itemgetter(2, 0) if is_overall else itemgetter(0), stats_data.keys())),
                       index=stats_data.keys(), columns=['League', 'Team'] if is_overall else ['Team'])
@@ -145,23 +145,27 @@ def matchup(categories, stats_data, matchup_scores, plays_data, places_data, com
     df_stats = pd.DataFrame(list(stats_data.values()), index=stats_data.keys(), columns=categories)
     df = df.merge(df_stats, how='outer', left_index=True, right_index=True)
     matchup_scores_dict = {}
-    for s in matchup_scores:
+    for s in metrics['Score']:
         matchup_scores_dict.update(s)
     df_score = pd.DataFrame(list(matchup_scores_dict.values()), index=matchup_scores_dict.keys(), columns=['Score'])
     df = df.merge(df_score, how='outer', left_index=True, right_index=True)
 
-    is_each_category = False
-    er_data = {}
-    for team in expected_data:
-        if len(expected_data[team]) > 1:
-            er_data[team] = '-'.join(map(lambda x: f'{np.round(x, 1):g}', expected_data[team]))
-            is_each_category = True
-        else:
-            er_data[team] = expected_data[team]
-    er_df_col = ['ExpScore' if is_each_category else 'ER']
-    df_er = pd.DataFrame(list(er_data.values()), index=er_data.keys(), columns=er_df_col)
-    df = df.merge(df_er, how='outer', left_index=True, right_index=True)
+    expected_scores = metrics.get('ExpScore', None)
+    if expected_scores is not None:
+        exp_score_df_data = {}
+        for team in expected_scores:
+            exp_score_df_data[team] = '-'.join(map(lambda x: f'{x:.1f}', expected_scores[team]))
+        df_exp_score = pd.DataFrame(list(exp_score_df_data.values()), index=exp_score_df_data.keys(),
+                                    columns=['ExpScore'])
+        df = df.merge(df_exp_score, how='outer', left_index=True, right_index=True)
+
+    expected_results = metrics.get('ER', None)
+    if expected_results is not None:
+        df_er = pd.DataFrame(list(expected_results.values()), index=expected_results.keys(), columns=['ER'])
+        df = df.merge(df_er, how='outer', left_index=True, right_index=True)
+
     calc_power_lambda = lambda x: x[0] + x[2] * 0.5
+    comparisons = metrics['TP']
     n_opponents = len(comparisons) - 1
     team_power = {team: np.round(calc_power_lambda(comparisons[team]) / n_opponents, 2) for team in comparisons}
     df_tp = pd.DataFrame(list(team_power.values()), index=team_power.keys(), columns=['TP'])
@@ -181,7 +185,7 @@ def matchup(categories, stats_data, matchup_scores, plays_data, places_data, com
 
     best, worst = _get_extremums(df, less_to_win_categories, is_opponent=False)
     extremum_cols = categories + ['Score']
-    if is_each_category:
+    if 'ExpScore' in metrics:
         extremum_cols.append('ExpScore')
     if plays_data:
         extremum_cols.append(plays_data[0])
@@ -195,7 +199,7 @@ def matchup(categories, stats_data, matchup_scores, plays_data, places_data, com
         apply(extremum_lambda, subset=pd.IndexSlice[df.index, extremum_cols]).\
         apply(style.place, subset=pd.IndexSlice[df_stats.index, places_cols]).\
         map(style.percentage, subset=pd.IndexSlice[df_stats.index, ['TP']])
-    if not is_each_category:
+    if 'ER' in metrics:
         styler = styler.map(style.pair_result, subset=pd.IndexSlice[df_stats.index, ['ER']])
     if plays_data:
         styler = styler.apply(style.place, subset=pd.IndexSlice[df_stats.index, [f'{plays_data[0]} ']])
