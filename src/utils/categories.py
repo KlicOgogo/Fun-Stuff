@@ -154,3 +154,10 @@ def get_stats(results):
         for team, total_score in pair:
             stats[team] = [score for _, score in total_score]
     return stats
+
+
+def join_stats_and_plays(stats, plays):
+    if plays is None:
+        return stats
+
+    return {team: [plays[team]] + team_stats for team, team_stats in stats.items()}

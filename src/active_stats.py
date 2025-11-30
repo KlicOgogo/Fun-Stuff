@@ -39,13 +39,11 @@ def _league_tables(sports, matchup, league_active_stats, descriptions):
 
 def calculate_tables(league_settings, matchup, scoreboard_data, active_stats_data, descriptions):
     leagues = league_settings['leagues'].split(',')
-    leagues_names = []
     sports = league_settings['sports']
-    
+
     leagues_tables = []
     for league_id in leagues:
         _, _, _, league_name = scoreboard_data[league_id]
-        leagues_names.append(league_name)
 
         league_active_stats = active_stats_data[league_id]
         tables = _league_tables(sports, matchup, league_active_stats, descriptions)

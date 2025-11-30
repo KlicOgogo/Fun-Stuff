@@ -209,14 +209,16 @@ def save_league_index(league_name, league_settings, global_config):
     sports = league_settings['sports']
     league_id = league_settings['leagues'].split(',')[0]
     enable_analytics_flags = list(map(int, league_settings.get('is_analytics_enabled', '0').split(',')))
-    index_keys = ['results', 'analytics'] if np.sum(enable_analytics_flags) != 0 else ['results']
+    report_types = ['results']
+    if np.sum(enable_analytics_flags) != 0:
+        report_types.append('analytics')
     if league_settings['is_full_support']:
-        index_keys.append('active stats')
+        report_types.append('active stats')
 
     main_github = global_config['main_github']
     main_repo = global_config['main_repo']
     main_index_url = f'https://{main_github}.github.io/{main_repo}/homepage.html'
-    for index_key in index_keys:
+    for index_key in report_types:
         index_repo_name = global_config[index_key]['repo_name']
         index_dir_name = global_config[index_key]['dir_name']
         index_relative_path = os.path.join(index_repo_name, index_dir_name, sports, league_id)

@@ -14,7 +14,7 @@ _less_to_win_categories = ['TO', 'GAA', 'GA', 'PF']
 _plays_cols = {'basketball': 'MIN', 'hockey': 'GP'}
 
 
-def _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data, box_scores_data, global_resources):
+def _analytics_tables(league_settings, schedule, matchup, scoreboard_data, box_scores_data, global_resources):
     leagues = league_settings['leagues'].split(',')
     analytics_enabled_flags = map(int, league_settings['is_analytics_enabled'].split(','))
     sports = league_settings['sports']
@@ -85,7 +85,7 @@ def _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data
     return analytics_tables
 
 
-def _export_overall_tables(matchup, categories, plays, scores, stats_pairs, league_settings, global_resources):
+def _overall_tables(matchup, categories, plays, scores, stats_pairs, league_settings, global_resources):
     n_last = global_resources['config']['n_last_matchups']
     titles = global_resources['titles']
     descriptions = global_resources['descriptions']
@@ -97,14 +97,14 @@ def _export_overall_tables(matchup, categories, plays, scores, stats_pairs, leag
         plays_places = utils.common.get_places(plays, True)
         plays_data = (_plays_cols[league_settings['sports']], plays, plays_places)
     stats = utils.categories.get_stats(stats_pairs[matchup - 1])
-    opp_dict = utils.common.get_opponent_dict(stats_pairs[matchup - 1])
+    opponent_dict = utils.common.get_opponent_dict(stats_pairs[matchup - 1])
     places_data = utils.categories.get_places_data(stats, categories, _less_to_win_categories)
     comparisons = utils.categories.get_comparison_stats(stats, categories, _less_to_win_categories, tiebreaker)
 
     expected_score = utils.categories.get_expected_score(stats, categories, _less_to_win_categories)
     tiebreaker_stats = utils.categories.get_tiebreaker_expectation(
         stats, categories, _less_to_win_categories, tiebreaker)
-    expected_result = utils.categories.get_expected_result(expected_score, tiebreaker_stats, opp_dict)
+    expected_result = utils.categories.get_expected_result(expected_score, tiebreaker_stats, opponent_dict)
     expectations = expected_score if league_settings['is_each_category'] else expected_result
     expectations_column_name = 'ExpScore' if league_settings['is_each_category'] else 'ER'
     metrics = {
@@ -135,66 +135,63 @@ def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_sc
     plays_getters = {'basketball': utils.data.minutes, 'hockey': utils.data.player_games}
     is_each_category = league_settings['is_each_category']
     leagues = league_settings['leagues'].split(',')
-    leagues_names = []
     sports = league_settings['sports']
     tiebreaker = league_settings['tiebreaker']
-    is_full_support = league_settings['is_full_support']
     gk_threshold = league_settings['gk_threshold'] if 'gk_threshold' in league_settings else None
-    double_gk_threshold_key = 'is_playoffs_double_gk_threshold'
-    is_playoffs_double_gk_threshold = league_settings[double_gk_threshold_key] \
-        if double_gk_threshold_key in league_settings else False
+    is_playoffs_double_gk_threshold = league_settings.get('is_playoffs_double_gk_threshold', False)
 
+    has_scoreboards = scoreboard_data is not None
     leagues_tables = []
-    overall_plays = {} if is_full_support else None
+    overall_plays = {} if has_scoreboards else None
     overall_scores = []
     overall_stats_pairs = [[] for _ in range(matchup)]
     for league in leagues:
         scores, _, category_pairs, league_name = scoreboard_data[league]
-        leagues_names.append(league_name)
         matchup_scores = scores[matchup - 1]
         overall_scores.extend(matchup_scores)
         
-        plays = None
-        gk_games = None
-        if is_full_support:
-            matchup_box_scores_data = box_scores_data[league][matchup - 1]
-            plays = plays_getters[sports](matchup_box_scores_data)
-            if plays:
-                overall_plays.update(plays)
-            gk_games = utils.data.goalkeeper_games(matchup_box_scores_data)
-        plays_data = None
-        if plays:
-            plays_places = utils.common.get_places(plays, True)
-            plays_data = (_plays_cols[sports], plays, plays_places)
-        
+        plays = plays_getters[sports](box_scores_data[league][matchup - 1]) if has_scoreboards else None
+        plays_places = utils.common.get_places(plays, reverse=True) if plays is not None else None
+        gk_games = utils.data.goalkeeper_games(box_scores_data[league][matchup - 1]) if has_scoreboards else None
+        overall_plays = overall_plays | plays if plays is not None else overall_plays
+
         actual_gk_threshold = gk_threshold
         is_playoffs = schedule[matchup][-1]
         if is_playoffs_double_gk_threshold and is_playoffs:
             actual_gk_threshold = gk_threshold if gk_threshold is None else 2 * gk_threshold
         matchup_pairs, categories = category_pairs[matchup - 1]
         matchup_pairs = utils.categories.apply_gk_rules(matchup_pairs, gk_games, actual_gk_threshold)
+
         stats = utils.categories.get_stats(matchup_pairs)
-        opp_dict = utils.common.get_opponent_dict(matchup_pairs)
         places_data = utils.categories.get_places_data(stats, categories, _less_to_win_categories)
-        comparisons = utils.categories.get_comparison_stats(stats, categories, _less_to_win_categories, tiebreaker)
+        places_sum = {team: np.sum(team_places) for team, team_places in places_data.items()}
+        stats_with_plays = utils.categories.join_stats_and_plays(stats, plays)
+        places_with_plays = utils.categories.join_stats_and_plays(places_data, plays_places)
+        plays_columns = [_plays_cols[league_settings['sports']]] if plays is not None else []
+        categories_with_plays = plays_columns + categories
 
         matchup_expected_score = utils.categories.get_expected_score(stats, categories, _less_to_win_categories)
         matchup_tiebreaker_stats = utils.categories.get_tiebreaker_expectation(
             stats, categories, _less_to_win_categories, tiebreaker)
+        opponent_dict = utils.common.get_opponent_dict(matchup_pairs)
         matchup_expected_result = utils.categories.get_expected_result(
-            matchup_expected_score, matchup_tiebreaker_stats, opp_dict)
+            matchup_expected_score, matchup_tiebreaker_stats, opponent_dict)
         matchup_expectations = matchup_expected_score \
             if league_settings['is_each_category'] else matchup_expected_result
         expectations_column_name = 'ExpScore' if league_settings['is_each_category'] else 'ER'
+        comparisons = utils.categories.get_comparison_stats(stats, categories, _less_to_win_categories, tiebreaker)
         metrics = {
             'Score': matchup_scores,
             expectations_column_name: matchup_expectations,
             'TP': comparisons,
         }
+
         tables = []
         tables.append([
             titles['matchup'], descriptions['matchup'],
-            table.categories.matchup(categories, stats, plays_data, places_data, _less_to_win_categories, metrics)])
+            table.categories.matchup(
+                stats_with_plays, places_with_plays, places_sum,
+                categories_with_plays, _less_to_win_categories, metrics)])
 
         places = defaultdict(list)
         opp_places = defaultdict(list)
@@ -319,11 +316,11 @@ def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_sc
         league_link = f'https://fantasy.espn.com/{sports}/league?leagueId={league}'
         leagues_tables.append([league_name, league_link, tables])
 
-    analytics_tables = _export_analytics_tables(
+    analytics_tables = _analytics_tables(
         league_settings, schedule, matchup, scoreboard_data, box_scores_data, global_resources)
     overall_tables = []
     if len(leagues) > 1:
-        overall_tables = _export_overall_tables(matchup, categories, overall_plays,
+        overall_tables = _overall_tables(matchup, categories, overall_plays,
             overall_scores, overall_stats_pairs, league_settings)
 
     return {

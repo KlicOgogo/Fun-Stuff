@@ -51,6 +51,36 @@ def _get_extremums(df, less_to_win_categories, is_opponent, n_last=None):
     return best, worst
 
 
+def _matchup_metrics(metrics):
+    matchup_scores_dict = {}
+    for s in metrics['Score']:
+        matchup_scores_dict.update(s)
+    df = pd.DataFrame(list(matchup_scores_dict.values()), index=matchup_scores_dict.keys(), columns=['Score'])
+
+    expected_scores = metrics.get('ExpScore', None)
+    if expected_scores is not None:
+        exp_score_df_data = {}
+        for team in expected_scores:
+            exp_score_df_data[team] = '-'.join(map(lambda x: f'{x:.1f}', expected_scores[team]))
+        df_exp_score = pd.DataFrame(list(exp_score_df_data.values()), index=exp_score_df_data.keys(),
+                                    columns=['ExpScore'])
+        df = df.merge(df_exp_score, how='outer', left_index=True, right_index=True)
+
+    expected_results = metrics.get('ER', None)
+    if expected_results is not None:
+        df_er = pd.DataFrame(list(expected_results.values()), index=expected_results.keys(), columns=['ER'])
+        df = df.merge(df_er, how='outer', left_index=True, right_index=True)
+
+    calc_power_lambda = lambda x: x[0] + x[2] * 0.5
+    comparisons = metrics['TP']
+    n_opponents = len(comparisons) - 1
+    team_power = {team: np.round(calc_power_lambda(comparisons[team]) / n_opponents, 2) for team in comparisons}
+    df_tp = pd.DataFrame(list(team_power.values()), index=team_power.keys(), columns=['TP'])
+    df = df.merge(df_tp, how='outer', left_index=True, right_index=True)
+
+    return df
+
+
 def pairwise_comparisons(comparisons_data, matchups, is_opponent, n_last, less_to_win_categories):
     df_data = copy.deepcopy(comparisons_data)
     for team in df_data:
@@ -134,73 +164,39 @@ def expected_win_stats(data, expected_data, matchups):
     return styler.to_html()
 
 
-def matchup(categories, stats_data, plays_data, places_data, less_to_win_categories, metrics):
-    is_overall = len(set(map(itemgetter(2), stats_data.keys()))) > 1
-    df = pd.DataFrame(list(map(itemgetter(2, 0) if is_overall else itemgetter(0), stats_data.keys())),
-                      index=stats_data.keys(), columns=['League', 'Team'] if is_overall else ['Team'])
-    if plays_data:
-        plays = plays_data[1]
-        df_plays = pd.DataFrame(list(plays.values()), index=plays.keys(), columns=[plays_data[0]])
-        df = df.merge(df_plays, how='outer', left_index=True, right_index=True)
-    df_stats = pd.DataFrame(list(stats_data.values()), index=stats_data.keys(), columns=categories)
+def matchup(stats_with_plays, places_with_plays, places_sum, categories_with_plays, less_to_win_categories, metrics):
+    is_overall = len(set(map(itemgetter(2), stats_with_plays.keys()))) > 1
+    df = pd.DataFrame(list(map(itemgetter(2, 0) if is_overall else itemgetter(0), stats_with_plays.keys())),
+                      index=stats_with_plays.keys(), columns=['League', 'Team'] if is_overall else ['Team'])
+
+    df_stats = pd.DataFrame(list(stats_with_plays.values()), index=stats_with_plays.keys(),
+                            columns=categories_with_plays)
     df = df.merge(df_stats, how='outer', left_index=True, right_index=True)
-    matchup_scores_dict = {}
-    for s in metrics['Score']:
-        matchup_scores_dict.update(s)
-    df_score = pd.DataFrame(list(matchup_scores_dict.values()), index=matchup_scores_dict.keys(), columns=['Score'])
-    df = df.merge(df_score, how='outer', left_index=True, right_index=True)
 
-    expected_scores = metrics.get('ExpScore', None)
-    if expected_scores is not None:
-        exp_score_df_data = {}
-        for team in expected_scores:
-            exp_score_df_data[team] = '-'.join(map(lambda x: f'{x:.1f}', expected_scores[team]))
-        df_exp_score = pd.DataFrame(list(exp_score_df_data.values()), index=exp_score_df_data.keys(),
-                                    columns=['ExpScore'])
-        df = df.merge(df_exp_score, how='outer', left_index=True, right_index=True)
+    df_metrics = _matchup_metrics(metrics)
+    df = df.merge(df_metrics, how='outer', left_index=True, right_index=True)
 
-    expected_results = metrics.get('ER', None)
-    if expected_results is not None:
-        df_er = pd.DataFrame(list(expected_results.values()), index=expected_results.keys(), columns=['ER'])
-        df = df.merge(df_er, how='outer', left_index=True, right_index=True)
-
-    calc_power_lambda = lambda x: x[0] + x[2] * 0.5
-    comparisons = metrics['TP']
-    n_opponents = len(comparisons) - 1
-    team_power = {team: np.round(calc_power_lambda(comparisons[team]) / n_opponents, 2) for team in comparisons}
-    df_tp = pd.DataFrame(list(team_power.values()), index=team_power.keys(), columns=['TP'])
-    df = df.merge(df_tp, how='outer', left_index=True, right_index=True)
-    
-    if plays_data:
-        plays = plays_data[2]
-        df_plays = pd.DataFrame(list(plays.values()), index=plays.keys(), columns=[f'{plays_data[0]} '])
-        df = df.merge(df_plays, how='outer', left_index=True, right_index=True)
-    for team in places_data:
-        places_data[team].append(np.sum(places_data[team]))
-    places_cols = [f'{col} ' for col in categories]
-    df_places = pd.DataFrame(list(places_data.values()), index=places_data.keys(), columns=places_cols + ['SUM'])
+    places_cols = [f'{col} ' for col in categories_with_plays]
+    df_places = pd.DataFrame(list(places_with_plays.values()), index=places_with_plays.keys(), columns=places_cols)
     df = df.merge(df_places, how='outer', left_index=True, right_index=True)
+    df_places_sum = pd.DataFrame(list(places_sum.values()), index=places_sum.keys(), columns=['SUM'])
+    df = df.merge(df_places_sum, how='outer', left_index=True, right_index=True)
+
     df = df.iloc[np.lexsort((-df['PTS'], df['SUM']))]
     df = add_position_column(df)
 
     best, worst = _get_extremums(df, less_to_win_categories, is_opponent=False)
-    extremum_cols = categories + ['Score']
+    extremum_cols = categories_with_plays + ['Score']
     if 'ExpScore' in metrics:
         extremum_cols.append('ExpScore')
-    if plays_data:
-        extremum_cols.append(plays_data[0])
 
-    num_cols = set(df.columns) - {'Team', 'League', 'Score', 'ER', 'ExpScore', 'ATOI'}
-    cols_minus = {*categories, plays_data[0]} if plays_data else set(categories)
+    num_cols = list(set(df.columns) - {'Team', 'League', 'Score', 'ER', 'ExpScore', 'ATOI'})
     extremum_lambda = lambda s: style.extremum(s, best[s.name], worst[s.name])
-    styler = df.style.format('{:g}', subset=pd.IndexSlice[df_stats.index, list(num_cols - cols_minus)]).\
-        format('{:g}', subset=pd.IndexSlice[df.index, list(set(categories) - {'ATOI'})]).\
+    styler = df.style.format('{:g}', subset=pd.IndexSlice[df.index, num_cols]).\
         set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
         apply(extremum_lambda, subset=pd.IndexSlice[df.index, extremum_cols]).\
         apply(style.place, subset=pd.IndexSlice[df_stats.index, places_cols]).\
         map(style.percentage, subset=pd.IndexSlice[df_stats.index, ['TP']])
     if 'ER' in metrics:
         styler = styler.map(style.pair_result, subset=pd.IndexSlice[df_stats.index, ['ER']])
-    if plays_data:
-        styler = styler.apply(style.place, subset=pd.IndexSlice[df_stats.index, [f'{plays_data[0]} ']])
     return styler.to_html()

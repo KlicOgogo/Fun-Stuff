@@ -141,14 +141,12 @@ def _overall_tables(n_leagues, matchup, overall_scores, global_resources):
 
 def calculate_tables(league_settings, schedule, matchup, scoreboards, box_scores, global_resources):
     leagues = league_settings['leagues'].split(',')
-    leagues_names = []
     sports = league_settings['sports']
 
     overall_scores = defaultdict(list)
     tables = []
     for league_id in leagues:
         scores_pairs, _, _, league_name = scoreboards[league_id]
-        leagues_names.append(league_name)
         scores = defaultdict(list)
         for matchup_results in scores_pairs[:matchup]:
             for p1, p2 in matchup_results:
