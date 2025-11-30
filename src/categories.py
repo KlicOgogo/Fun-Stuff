@@ -307,7 +307,7 @@ def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_sc
             titles['places'], descriptions['places'],
             table.common.places(places, matchups, False, False, n_last)])
         tables.append([
-            titles['places_opp'], descriptions['places_opp'],
+            titles['places_opponent'], descriptions['places_opponent'],
             table.common.places(opp_places, matchups, True, False, n_last)])
 
         tables.append([

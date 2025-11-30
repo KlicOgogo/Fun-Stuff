@@ -25,7 +25,8 @@ def luck_score(luck, matchups, opp_flag, n_last):
     cols = [*matchups, '&#128532;', '&#128526;', recent_col, 'SUM']
     df = pd.DataFrame(list(df_data.values()), index=df_data.keys(), columns=cols)
     df = df_teams.merge(df, how='outer', left_index=True, right_index=True)
-    sort_cols = ['&#128532;', '&#128526;', recent_col, 'SUM'] if opp_flag else ['&#128526;', '&#128532;', recent_col, 'SUM']
+    sort_cols = ['&#128532;', '&#128526;', recent_col, 'SUM'] \
+        if opp_flag else ['&#128526;', '&#128532;', recent_col, 'SUM']
     sort_indexes = np.lexsort([df[col] * coeff for col, coeff in zip(sort_cols, [1.0, -1.0, 1.0, 1.0])])
     df = df.iloc[sort_indexes]
     df = add_position_column(df)

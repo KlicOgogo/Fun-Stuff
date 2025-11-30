@@ -1,10 +1,10 @@
 {
     "scores": "Scores",
-    "scores_opp": "Opponent scores",
+    "scores_opponent": "Opponent scores",
     "luck": "Luck scores",
-    "luck_opp": "Opponent luck scores",
+    "luck_opponent": "Opponent luck scores",
     "places": "Places",
-    "places_opp": "Opponent places",
+    "places_opponent": "Opponent places",
     "mean": "Mean scores",
     "mean_places": "Mean scores places",
     "pairwise_h2h": "Pairwise comparisons h2h",
