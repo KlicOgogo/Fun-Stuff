@@ -173,7 +173,7 @@ def save_homepage(report_types, global_config, index_config, league_names):
     _save_html('index', template_params, homepage_path)
 
 
-def save_reports_type_indexes(report_types, global_config, league_names):
+def save_report_type_indexes(report_types, global_config, league_names):
     for report_type in report_types:
         github = global_config[report_type]['github']
         all_leagues = defaultdict(list)

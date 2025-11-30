@@ -224,7 +224,7 @@ def main(global_res):
     report_types = global_config['report_types']
     utils.common.save_homepage(report_types, global_config, leagues_settings, league_names)
     utils.common.save_archive(report_types, global_config, league_names)
-    utils.common.save_reports_type_indexes(report_types, global_config, league_names)
+    utils.common.save_report_type_indexes(report_types, global_config, league_names)
 
 if __name__ == '__main__':
     try:

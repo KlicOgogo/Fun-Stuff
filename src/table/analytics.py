@@ -158,12 +158,12 @@ def power_predictions_h2h(places_by_categories):
     return common.h2h(comparisons_h2h)
 
 
-def win_stats_by_each_category(win_stats_each_category, categories, n_last=None):
+def category_win_stats(win_stats, categories, n_last=None):
     df_data = defaultdict(list)
     slice_left = 0 if n_last is None else -n_last
-    for category in win_stats_each_category:
-        for team in win_stats_each_category[category]:
-            df_data[team].append(np.mean(win_stats_each_category[category][team][slice_left:]))
+    for category in win_stats:
+        for team in win_stats[category]:
+            df_data[team].append(np.mean(win_stats[category][team][slice_left:]))
 
     n_ranks = 5
     ranges = [(-0.00001, 1 / n_ranks)] + [(i / n_ranks, (i + 1) / n_ranks) for i in range(1, n_ranks)]

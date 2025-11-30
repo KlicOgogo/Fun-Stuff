@@ -10,59 +10,8 @@ import utils.common
 import utils.data
 
 
-_gk_category_lowers = {'GAA': np.inf, 'SV%': -np.inf, 'GA': np.inf}
 _less_to_win_categories = ['TO', 'GAA', 'GA', 'PF']
 _plays_cols = {'basketball': 'MIN', 'hockey': 'GP'}
-
-
-def _apply_gk_rules(matchup_pairs, gk_games, gk_threshold):
-    pairs_updated = []
-    for pair in matchup_pairs:
-        updated_pair = []
-        for team, player_stats in pair:
-            updated_player_stats = []
-            for cat, stat in player_stats:
-                if cat in _gk_category_lowers and gk_games and team in gk_games and gk_games[team] < gk_threshold:
-                    updated_player_stats.append((cat, _gk_category_lowers[cat]))
-                else:
-                    updated_player_stats.append((cat, stat))
-            updated_pair.append((team, updated_player_stats))
-        pairs_updated.append(tuple(updated_pair))
-
-    return pairs_updated
-
-
-def _get_each_category_stats(league, league_settings, schedule, matchup, category_pairs, box_scores_data):
-    gk_threshold = league_settings['gk_threshold'] if 'gk_threshold' in league_settings else None
-    double_gk_threshold_key = 'is_playoffs_double_gk_threshold'
-    is_playoffs_double_gk_threshold = league_settings[double_gk_threshold_key] \
-        if double_gk_threshold_key in league_settings else False
-
-    each_category_places = defaultdict(lambda: defaultdict(list))
-    each_category_win_stats = defaultdict(lambda: defaultdict(list))
-    for m in range(matchup):
-        current_matchup = m + 1
-        gk_games = None
-        if league_settings['is_full_support']:
-            matchup_box_scores_data = box_scores_data[league][m]
-            gk_games = utils.data.gk_games(matchup_box_scores_data)
-
-        actual_gk_threshold = gk_threshold
-        is_playoffs = schedule[current_matchup][-1]
-        if is_playoffs_double_gk_threshold and is_playoffs:
-            actual_gk_threshold = gk_threshold if gk_threshold is None else 2 * gk_threshold
-        matchup_pairs, categories = category_pairs[m]
-        matchup_pairs = _apply_gk_rules(matchup_pairs, gk_games, actual_gk_threshold)
-        opp_dict = utils.common.get_opponent_dict(matchup_pairs)
-        stats = utils.categories.get_stats(matchup_pairs)
-        places_data = utils.categories.get_places_data(stats, categories, _less_to_win_categories)
-        for team in places_data:
-            for cat, place, opp_place in zip(categories, places_data[team], places_data[opp_dict[team]]):
-                each_category_places[cat][team].append(place)
-                win_stat = (np.sign(opp_place - place) + 1) / 2 # 1 for win, 0.5 for draw, 0 for lose
-                each_category_win_stats[cat][team].append(win_stat)
-
-    return categories, each_category_places, each_category_win_stats
 
 
 def _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data, box_scores_data, global_resources):
@@ -78,55 +27,58 @@ def _export_analytics_tables(league_settings, schedule, matchup, scoreboard_data
     for is_analytics_enabled, league in zip(analytics_enabled_flags, leagues):
         if not is_analytics_enabled:
             continue
-    
+
         _, team_names, category_pairs, league_name = scoreboard_data[league]
-        categories, each_category_places, each_category_win_stats = _get_each_category_stats(
-            league, league_settings, schedule, matchup, category_pairs, box_scores_data
-        )
-            
+        gk_games_per_matchup = None
+        if box_scores_data is not None:
+            league_box_scores = box_scores_data[league]
+            gk_games_per_matchup = []
+            for m in range(matchup):
+                matchup_gk_games = utils.data.goalkeeper_games(league_box_scores[m])
+                gk_games_per_matchup.append(matchup_gk_games)
+        categories, category_places, category_win_stats = utils.categories.get_each_category_stats(
+            league_settings, schedule, matchup, category_pairs, gk_games_per_matchup, _less_to_win_categories)
+
         tables = []
         tables.append([
             titles['category_win_stats'], descriptions['category_win_stats'],
-            table.analytics.win_stats_by_each_category(each_category_win_stats, categories)])
+            table.analytics.category_win_stats(category_win_stats, categories)])
         tables.append([
             titles['recent_category_win_stats'].format(n_last),
             descriptions['recent_category_win_stats'].format(n_last),
-            table.analytics.win_stats_by_each_category(each_category_win_stats, categories, n_last)
+            table.analytics.category_win_stats(category_win_stats, categories, n_last)
         ])
         tables.append([
             titles['category_power'], descriptions['category_power'],
-            table.analytics.category_power(each_category_places, categories)])
+            table.analytics.category_power(category_places, categories)])
         tables.append([
-            titles['recent_category_power'].format(n_last),
-            descriptions['recent_category_power'].format(n_last),
-            table.analytics.category_power(each_category_places, categories, n_last)
+            titles['recent_category_power'].format(n_last), descriptions['recent_category_power'].format(n_last),
+            table.analytics.category_power(category_places, categories, n_last)
         ])
         tables.append([
             titles['category_rankings'], descriptions['category_rankings'],
-            table.analytics.category_rankings(each_category_places, categories)])
+            table.analytics.category_rankings(category_places, categories)])
 
         matchups = np.arange(1, matchup + 1)
         tables.append([
             titles['result_expectation_h2h'], descriptions['result_expectation_h2h'],
-            table.analytics.power_predictions_h2h(each_category_places)])
+            table.analytics.power_predictions_h2h(category_places)])
 
         for cat in categories:
             cat_name = category_names[cat]
-            places = each_category_places[cat]
+            places = category_places[cat]
             tables.append([
-                titles['category_places'].format(cat_name),
-                descriptions['category_places'].format(cat_name),
-                table.common.places(places, matchups, False, False, n_last)
-            ])
+                titles['category_places'].format(cat_name), descriptions['category_places'].format(cat_name),
+                table.common.places(places, matchups, False, False, n_last)])
 
         for team_id, team_name in sorted(team_names.items()):
             team_key = (team_name, team_id, league_name, league)
             tables.append([
                 titles['team_category_record'].format(team_name), descriptions['team_category_record'],
-                table.analytics.h2h_category_record(each_category_places, categories, team_key, n_last)])
+                table.analytics.h2h_category_record(category_places, categories, team_key, n_last)])
             tables.append([
                 titles['result_expectation'].format(team_name), descriptions['result_expectation'],
-                table.analytics.power_predictions(each_category_places, team_key, matchups)])
+                table.analytics.power_predictions(category_places, team_key, matchups)])
 
         league_link = f'https://fantasy.espn.com/{sports}/league?leagueId={league}'
         analytics_tables.append([league_name, league_link, tables])
@@ -150,7 +102,8 @@ def _export_overall_tables(matchup, categories, plays, scores, stats_pairs, leag
     comparisons = utils.categories.get_comparison_stats(stats, categories, _less_to_win_categories, tiebreaker)
 
     expected_score = utils.categories.get_expected_score(stats, categories, _less_to_win_categories)
-    tiebreaker_stats = utils.categories.get_tiebreaker_stats(stats, categories, _less_to_win_categories, tiebreaker)
+    tiebreaker_stats = utils.categories.get_tiebreaker_expectation(
+        stats, categories, _less_to_win_categories, tiebreaker)
     expected_result = utils.categories.get_expected_result(expected_score, tiebreaker_stats, opp_dict)
     expectations = expected_score if league_settings['is_each_category'] else expected_result
     expectations_column_name = 'ExpScore' if league_settings['is_each_category'] else 'ER'
@@ -208,7 +161,7 @@ def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_sc
             plays = plays_getters[sports](matchup_box_scores_data)
             if plays:
                 overall_plays.update(plays)
-            gk_games = utils.data.gk_games(matchup_box_scores_data)
+            gk_games = utils.data.goalkeeper_games(matchup_box_scores_data)
         plays_data = None
         if plays:
             plays_places = utils.common.get_places(plays, True)
@@ -219,14 +172,14 @@ def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_sc
         if is_playoffs_double_gk_threshold and is_playoffs:
             actual_gk_threshold = gk_threshold if gk_threshold is None else 2 * gk_threshold
         matchup_pairs, categories = category_pairs[matchup - 1]
-        matchup_pairs = _apply_gk_rules(matchup_pairs, gk_games, actual_gk_threshold)
+        matchup_pairs = utils.categories.apply_gk_rules(matchup_pairs, gk_games, actual_gk_threshold)
         stats = utils.categories.get_stats(matchup_pairs)
         opp_dict = utils.common.get_opponent_dict(matchup_pairs)
         places_data = utils.categories.get_places_data(stats, categories, _less_to_win_categories)
         comparisons = utils.categories.get_comparison_stats(stats, categories, _less_to_win_categories, tiebreaker)
 
         matchup_expected_score = utils.categories.get_expected_score(stats, categories, _less_to_win_categories)
-        matchup_tiebreaker_stats = utils.categories.get_tiebreaker_stats(
+        matchup_tiebreaker_stats = utils.categories.get_tiebreaker_expectation(
             stats, categories, _less_to_win_categories, tiebreaker)
         matchup_expected_result = utils.categories.get_expected_result(
             matchup_expected_score, matchup_tiebreaker_stats, opp_dict)
@@ -256,14 +209,14 @@ def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_sc
             gk_games = None
             if is_full_support:
                 matchup_box_scores_data = box_scores_data[league][m]
-                gk_games = utils.data.gk_games(matchup_box_scores_data)
+                gk_games = utils.data.goalkeeper_games(matchup_box_scores_data)
             
             actual_gk_threshold = gk_threshold
             is_playoffs = schedule[current_matchup][-1]
             if is_playoffs_double_gk_threshold and is_playoffs:
                 actual_gk_threshold = gk_threshold if gk_threshold is None else 2 * gk_threshold
             stats_pairs, _ = category_pairs[m]
-            stats_pairs = _apply_gk_rules(stats_pairs, gk_games, actual_gk_threshold)
+            stats_pairs = utils.categories.apply_gk_rules(stats_pairs, gk_games, actual_gk_threshold)
             opp_dict = utils.common.get_opponent_dict(stats_pairs)
             overall_stats_pairs[m].extend(stats_pairs)
             
@@ -286,7 +239,8 @@ def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_sc
                 win_record[team][result] += 1
 
             expected_score = utils.categories.get_expected_score(stats, categories, _less_to_win_categories)
-            tiebreaker_stats = utils.categories.get_tiebreaker_stats(stats, categories, _less_to_win_categories, tiebreaker)
+            tiebreaker_stats = utils.categories.get_tiebreaker_expectation(
+                stats, categories, _less_to_win_categories, tiebreaker)
             expected_result = utils.categories.get_expected_result(expected_score, tiebreaker_stats, opp_dict)
 
             for team in expected_score:

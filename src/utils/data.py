@@ -287,7 +287,7 @@ def box_scores_online(league_id, sports, matchup, pairs, schedule, browser):
     return box_scores_stats
 
 
-def gk_games(matchup_box_scores_data):
+def goalkeeper_games(matchup_box_scores_data):
     if not matchup_box_scores_data:
         return None
     gk_games = {}
