@@ -157,8 +157,7 @@ def _export_overall_tables(matchup, categories, plays, scores, stats_pairs, leag
     overall_tables.append([
         titles['matchup_overall'], descriptions['matchup_overall'],
         table.categories.matchup(
-            categories, stats, scores, plays_data, places_data, comparisons, expected_data,
-            n_last, _less_to_win_categories)])
+            categories, stats, scores, plays_data, places_data, comparisons, expected_data, _less_to_win_categories)])
 
     places = defaultdict(list)
     for m in range(matchup):
@@ -235,7 +234,7 @@ def calculate_tables(league_settings, schedule, matchup, scoreboard_data, box_sc
             titles['matchup'], descriptions['matchup'],
             table.categories.matchup(
                 categories, stats, scores_data, plays_data, places_data, comparisons, matchup_expected_data,
-                n_last, _less_to_win_categories)])
+                _less_to_win_categories)])
 
         places = defaultdict(list)
         opp_places = defaultdict(list)

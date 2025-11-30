@@ -25,11 +25,11 @@ _no_value_cols = {
 }
 
 
-def _get_extremums(df, opp_flag, n_last, less_to_win_categories):
+def _get_extremums(df, less_to_win_categories, is_opponent, n_last=None):
     best = {}
     worst = {}
     for col in df.columns:
-        if col in _no_value_cols | {f'{col} ' for col in _categories} | {f'L{n_last}%'}:
+        if col in _no_value_cols | {f'{col} ' for col in _categories} | ({f'L{n_last}%'} if n_last else set()):
             best[col], worst[col] = ('', '')
         elif col in _categories | {'MIN', 'GP'}:
             extremums = (df[col].max(), df[col].min())
@@ -43,15 +43,15 @@ def _get_extremums(df, opp_flag, n_last, less_to_win_categories):
                     scores_for_sort.append([power_calc_lambda(sc_values), *[sc_values[i] for i in [0, 2, 1]]])
                 else:
                     raise Exception('Unexpected value format.')
-            max_val = min(scores_for_sort) if opp_flag else max(scores_for_sort)
-            min_val = max(scores_for_sort) if opp_flag else min(scores_for_sort)
+            max_val = min(scores_for_sort) if is_opponent else max(scores_for_sort)
+            min_val = max(scores_for_sort) if is_opponent else min(scores_for_sort)
             normalizer = lambda x: [x[i] for i in [1, 3, 2]]
             formatter = lambda x: '-'.join(map(lambda num: f'{num:g}', x))
             best[col], worst[col] = formatter(normalizer(max_val)), formatter(normalizer(min_val))
     return best, worst
 
 
-def comparisons(comparisons_data, matchups, opp_flag, n_last, less_to_win_categories):
+def comparisons(comparisons_data, matchups, is_opponent, n_last, less_to_win_categories):
     df_data = copy.deepcopy(comparisons_data)
     for team in df_data:
         team_stats = [np.array(list(map(int, score.split('-')))) for score in df_data[team]]
@@ -71,10 +71,10 @@ def comparisons(comparisons_data, matchups, opp_flag, n_last, less_to_win_catego
     perc_cols = [f'L{n_last}%', '%']
     df = pd.DataFrame(list(df_data.values()), index=df_data.keys(), columns=[*matchups, 'W  ', 'L', 'D', *perc_cols])
     df = df_teams.merge(df, how='outer', left_index=True, right_index=True)
-    sort_sign = 1 if opp_flag else -1
+    sort_sign = 1 if is_opponent else -1
     df = df.iloc[np.lexsort((sort_sign * df['W  '], sort_sign * (df['W  '] + df['D'] * 0.5)))]
     df = add_position_column(df)
-    best, worst = _get_extremums(df, opp_flag, n_last, less_to_win_categories)
+    best, worst = _get_extremums(df, less_to_win_categories, is_opponent, n_last)
     styler = df.style.format('{:g}', subset=pd.IndexSlice[list(df_data.keys()), perc_cols]).\
         set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
         apply(lambda s: style.extremum(s, best[s.name], worst[s.name]), subset=matchups).\
@@ -82,7 +82,7 @@ def comparisons(comparisons_data, matchups, opp_flag, n_last, less_to_win_catego
     return styler.to_html()
 
 
-def expected_each_category_stats(data, expected_data, matchup, n_last, less_to_win_categories):
+def expected_each_category_stats(data, expected_data, matchup, less_to_win_categories):
     df_data = copy.deepcopy(expected_data)
     for team in df_data:
         team_stats_array = np.vstack(df_data[team])
@@ -100,7 +100,7 @@ def expected_each_category_stats(data, expected_data, matchup, n_last, less_to_w
     df = df_teams.merge(df, how='outer', left_index=True, right_index=True)
     df = df.iloc[np.lexsort((-df['WD'], -df['Diff']))]
     df = add_position_column(df)
-    best, worst = _get_extremums(df, False, n_last, less_to_win_categories)
+    best, worst = _get_extremums(df, less_to_win_categories, is_opponent=False)
     extremum_lambda = lambda s: style.extremum(s, best[s.name], worst[s.name])
     styler = df.style.format('{:g}', subset=pd.IndexSlice[list(df_data.keys()), ['DD  ', 'WD', 'LD', 'Diff']]).\
         set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
@@ -134,15 +134,15 @@ def expected_win_stats(data, expected_data, matchups):
     return styler.to_html()
 
 
-def matchup(categories, stats_data, matchup_scores, plays_data, places_data, comparisons, expected_data, n_last, less_to_win_categories):
+def matchup(categories, stats_data, matchup_scores, plays_data, places_data, comparisons, expected_data, less_to_win_categories):
     is_overall = len(set(map(itemgetter(2), stats_data.keys()))) > 1
     df = pd.DataFrame(list(map(itemgetter(2, 0) if is_overall else itemgetter(0), stats_data.keys())),
                       index=stats_data.keys(), columns=['League', 'Team'] if is_overall else ['Team'])
-    df_stats = pd.DataFrame(list(stats_data.values()), index=stats_data.keys(), columns=categories)
     if plays_data:
-        data = plays_data[1]
-        df_data = pd.DataFrame(list(data.values()), index=data.keys(), columns=[plays_data[0]])
-        df = df.merge(df_data, how='outer', left_index=True, right_index=True)
+        plays = plays_data[1]
+        df_plays = pd.DataFrame(list(plays.values()), index=plays.keys(), columns=[plays_data[0]])
+        df = df.merge(df_plays, how='outer', left_index=True, right_index=True)
+    df_stats = pd.DataFrame(list(stats_data.values()), index=stats_data.keys(), columns=categories)
     df = df.merge(df_stats, how='outer', left_index=True, right_index=True)
     matchup_scores_dict = {}
     for s in matchup_scores:
@@ -168,9 +168,9 @@ def matchup(categories, stats_data, matchup_scores, plays_data, places_data, com
     df = df.merge(df_tp, how='outer', left_index=True, right_index=True)
     
     if plays_data:
-        data = plays_data[2]
-        df_data = pd.DataFrame(list(data.values()), index=data.keys(), columns=[f'{plays_data[0]} '])
-        df = df.merge(df_data, how='outer', left_index=True, right_index=True)
+        plays = plays_data[2]
+        df_plays = pd.DataFrame(list(plays.values()), index=plays.keys(), columns=[f'{plays_data[0]} '])
+        df = df.merge(df_plays, how='outer', left_index=True, right_index=True)
     for team in places_data:
         places_data[team].append(np.sum(places_data[team]))
     places_cols = [f'{col} ' for col in categories]
@@ -179,7 +179,7 @@ def matchup(categories, stats_data, matchup_scores, plays_data, places_data, com
     df = df.iloc[np.lexsort((-df['PTS'], df['SUM']))]
     df = add_position_column(df)
 
-    best, worst = _get_extremums(df, False, n_last, less_to_win_categories)
+    best, worst = _get_extremums(df, less_to_win_categories, is_opponent=False)
     extremum_cols = categories + ['Score']
     if is_each_category:
         extremum_cols.append('ExpScore')
