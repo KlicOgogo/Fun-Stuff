@@ -18,6 +18,114 @@ from utils.json_utils import load as json_load
 
 _repo_root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 _all_types = ['categories', 'points']
+_functions_by_type = {'points': points.calculate_tables, 'categories': categories.calculate_tables}
+
+
+def _process_group(group_settings, scoring_type, sports_to_process, old_data_loaded_matchups,
+                   browser, global_resources, league_names, data_loaded_matchups):
+    global_config = global_resources['config']
+    sports = group_settings['sports']
+    if sports not in sports_to_process:
+        return
+
+    schedule = None
+    use_offline_schedule = global_config['use_offline_schedule']
+    for league in group_settings['leagues'].split(','):
+        current_schedule = utils.data.schedule(
+            league, sports, group_settings['is_playoffs_support'], use_offline_schedule, browser)
+        if schedule is None:
+            schedule = current_schedule
+        elif schedule != current_schedule:
+            schedule = None
+            break
+
+    if schedule is None:
+        return
+
+    matchup, is_season_ended = utils.common.find_proper_matchup(schedule)
+    if matchup == -1:
+        return
+
+    is_full_support = group_settings['is_full_support']
+    main_league = group_settings['leagues'].split(',')[0]
+    league_loaded_matchups = old_data_loaded_matchups[sports].get(main_league, [])
+    matchup_str = str(matchup)
+    is_data_loaded = matchup_str in league_loaded_matchups
+    use_offline_data = global_config['use_offline_data'] or is_data_loaded
+    online_page_matchups = []
+    if is_full_support and not use_offline_data:
+        if is_season_ended:
+            online_page_matchups = [matchup]
+        else:
+            online_range_left = max(1, matchup - global_config['refresh_matchups'])
+            online_page_matchups = list(range(online_range_left, matchup + 1))
+
+    scoreboard_data = {}
+    for league in group_settings['leagues'].split(','):
+        scoreboard_data[league] = utils.data.scoreboard(
+            league, sports, matchup, browser, online_page_matchups, scoring_type == 'categories')
+        league_names[sports][league] = scoreboard_data[league][3]
+    main_league_name = league_names[sports][main_league]
+
+    matchups_to_process = [matchup]
+    if is_full_support:
+        process_range_left = max(1, matchup - global_config['refresh_matchups'])
+        matchups_to_process = list(range(process_range_left, matchup + 1))
+
+    box_scores = None
+    if group_settings['is_full_support']:
+        box_scores = defaultdict(list)
+        for league in group_settings['leagues'].split(','):
+            pairs, team_names, _, league_name = scoreboard_data[league]
+            for m in range(matchup):
+                current_matchup = m + 1
+                is_offline = current_matchup not in online_page_matchups or use_offline_data
+                matchup_box_scores = None
+                if is_offline:
+                    matchup_box_scores = utils.data.box_scores_offline(
+                        league, league_name, team_names, sports, current_matchup)
+                if matchup_box_scores is None:
+                    matchup_box_scores = utils.data.box_scores_online(
+                        league, sports, current_matchup, pairs[m], schedule, browser)
+                box_scores[league].append(matchup_box_scores)
+
+    calculate_tables_function = _functions_by_type[scoring_type]
+    for m in matchups_to_process:
+        tables = calculate_tables_function(
+            group_settings, schedule, m, scoreboard_data, box_scores, global_resources)
+
+        if box_scores:
+            active_stats_tables = active_stats.calculate_tables(
+                group_settings, m, scoreboard_data, box_scores, global_resources['descriptions'])
+            tables.update(active_stats_tables)
+
+        for report_type, type_tables in tables.items():
+            title = f'{main_league_name} ({sports}). Matchup {m} {report_type}'
+            template_params = {'title': title}
+            template_params.update(type_tables)
+            utils.common.save_tables(
+                sports, main_league, m, schedule, global_config, report_type, template_params)
+
+    data_loaded_matchups[sports][main_league] = league_loaded_matchups
+    if not is_data_loaded:
+        data_loaded_matchups[sports][main_league].append(matchup_str)
+
+    utils.common.save_league_index(main_league_name, group_settings, global_config)
+
+
+def _process_league_groups(global_resources, leagues, sports_to_process, old_data_loaded_matchups, browser):
+    result = {
+        'league_names': defaultdict(dict),
+        'data_loaded_matchups': defaultdict(dict),
+    }
+    try:
+        for group_settings, scoring_type, _ in leagues:
+            _process_group(group_settings, scoring_type, sports_to_process, old_data_loaded_matchups,
+                           browser, global_resources, result['league_names'], result['data_loaded_matchups'])
+    except Exception as e:
+        result.update({'error': e})
+    finally:
+        return result
 
 
 def _parse_arguments():
@@ -31,134 +139,26 @@ def _parse_arguments():
     return sports_to_process, types_to_process
 
 
-def _process_leagues(global_resources, leagues, sports_to_process, old_data_loaded_matchups, browser):
-    global_config = global_resources['config']
-    league_names = defaultdict(dict)
-    data_loaded_matchups = defaultdict(dict)
-
-    try:
-        functions_by_type = {'points': points.calculate_tables, 'categories': categories.calculate_tables}
-        for league_settings, type_item, _ in leagues:
-            sports = league_settings['sports']
-            if sports not in sports_to_process:
-                continue
-
-            schedule = None
-            use_offline_schedule = global_config['use_offline_schedule']
-            for league in league_settings['leagues'].split(','):
-                current_schedule = utils.data.schedule(
-                    league, sports, league_settings['is_playoffs_support'], use_offline_schedule, browser)
-                if schedule is None:
-                    schedule = current_schedule
-                elif schedule != current_schedule:
-                    schedule = None
-                    break
-
-            if schedule is None:
-                continue
-
-            matchup, is_season_ended = utils.common.find_proper_matchup(schedule)
-            if matchup == -1:
-                continue
-
-            is_full_support = league_settings['is_full_support']
-            main_league = league_settings['leagues'].split(',')[0]
-            league_loaded_matchups = old_data_loaded_matchups[sports].get(main_league, [])
-            matchup_str = str(matchup)
-            is_data_loaded = matchup_str in league_loaded_matchups
-            use_offline_data = global_config['use_offline_data'] or is_data_loaded
-            online_page_matchups = []
-            if is_full_support and not use_offline_data:
-                if is_season_ended:
-                    online_page_matchups = [matchup]
-                else:
-                    online_range_left = max(1, matchup - global_config['refresh_matchups'])
-                    online_page_matchups = list(range(online_range_left, matchup + 1))
-
-            scoreboard_data = {}
-            for league in league_settings['leagues'].split(','):
-                scoreboard_data[league] = utils.data.scoreboard(
-                    league, sports, matchup, browser, online_page_matchups, type_item == 'categories')
-                league_names[sports][league] = scoreboard_data[league][3]
-            main_league_name = league_names[sports][main_league]
-
-            matchups_to_process = [matchup]
-            if is_full_support:
-                process_range_left = max(1, matchup - global_config['refresh_matchups'])
-                matchups_to_process = list(range(process_range_left, matchup + 1))
-
-            box_scores = None
-            if league_settings['is_full_support']:
-                box_scores = defaultdict(list)
-                for league in league_settings['leagues'].split(','):
-                    pairs, team_names, _, league_name = scoreboard_data[league]
-                    for m in range(matchup):
-                        current_matchup = m + 1
-                        is_offline = current_matchup not in online_page_matchups or use_offline_data
-                        matchup_box_scores = None
-                        if is_offline:
-                            matchup_box_scores = utils.data.box_scores_offline(
-                                league, league_name, team_names, sports, current_matchup)
-                        if matchup_box_scores is None:
-                            matchup_box_scores = utils.data.box_scores_online(
-                                league, sports, current_matchup, pairs[m], schedule, browser)
-                        box_scores[league].append(matchup_box_scores)
-
-            calculate_tables_function = functions_by_type[type_item]
-            for m in matchups_to_process:
-                tables = calculate_tables_function(
-                    league_settings, schedule, m, scoreboard_data, box_scores, global_resources)
-
-                if box_scores:
-                    active_stats_tables = active_stats.calculate_tables(
-                        league_settings, m, scoreboard_data, box_scores, global_resources['descriptions'])
-                    tables.update(active_stats_tables)
-
-                for report_type, type_tables in tables.items():
-                    title = f'{main_league_name} ({sports}). Matchup {m} {report_type}'
-                    template_params = {'title': title}
-                    template_params.update(type_tables)
-                    utils.common.save_tables(
-                        sports, main_league, m, schedule, global_config, report_type, template_params)
-
-            data_loaded_matchups[sports][main_league] = league_loaded_matchups
-            if not is_data_loaded:
-                data_loaded_matchups[sports][main_league].append(matchup_str)
-
-            utils.common.save_league_index(main_league_name, league_settings, global_config)
-
-        return {
-            'league_names': league_names,
-            'data_loaded_matchups': data_loaded_matchups,
-        }
-    except Exception as e:
-        return {
-            'league_names': league_names,
-            'data_loaded_matchups': data_loaded_matchups,
-            'error': e,
-        }
-
-
 def _split_leagues_to_jobs(types_to_process, n_jobs):
     leagues_to_process = []
     index_types = []
     index_sizes = []
     leagues_settings = []
-    for type_item in _all_types:
-        leagues_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', f'res/{type_item}.json')
+    for scoring_type in _all_types:
+        leagues_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', f'res/{scoring_type}.json')
         leagues = json_load(leagues_path)
         leagues_settings.extend(leagues)
-        if type_item in types_to_process:
+        if scoring_type in types_to_process:
             leagues_to_process.extend(leagues)
-            index_types.extend([type_item] * len(leagues))
+            index_types.extend([scoring_type] * len(leagues))
             index_sizes.extend([l['leagues'].count(',') + 1 for l in leagues])
 
     result_indexes = [[] for _ in range(n_jobs)]
     result_lengths = [0 for _ in range(n_jobs)]
 
     settings_grouped = [
-        (league_settings, league_type, league_size)
-        for league_settings, league_type, league_size in zip(leagues_to_process, index_types, index_sizes)
+        (group_settings, league_type, league_size)
+        for group_settings, league_type, league_size in zip(leagues_to_process, index_types, index_sizes)
     ]
     random.shuffle(settings_grouped)
     for single_settings in sorted(settings_grouped, reverse=True, key=itemgetter(2)):
@@ -182,7 +182,7 @@ def main(global_resources):
     data_loaded_matchups = json_load(data_loaded_matchups_path, defaultdict(dict))
     sleep_timeout = global_config['timeout']
     if n_jobs == 1:
-        names_and_matchups = _process_leagues(
+        names_and_matchups = _process_league_groups(
             global_resources, settings_splitted[0], sports_to_process,
             data_loaded_matchups, utils.data.BrowserManager(50, sleep_timeout))
         names_and_matchups_list = [names_and_matchups]
@@ -198,7 +198,7 @@ def main(global_resources):
             )
             for job_settings in settings_splitted
         ]
-        names_and_matchups_list = pool.starmap(_process_leagues, process_params)
+        names_and_matchups_list = pool.starmap(_process_league_groups, process_params)
         pool.close()
         pool.join()
 
