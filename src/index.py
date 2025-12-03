@@ -17,10 +17,22 @@ from utils.json_utils import load as json_load
 
 
 _repo_root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+_all_types = ['categories', 'points']
 
 
-def _process_leagues(global_res, leagues, sports_list, old_data_loaded_matchups, browser):
-    global_config = global_res['config']
+def _parse_arguments():
+    sports_to_process = ['basketball', 'hockey']
+    types_to_process = _all_types
+    for arg in sys.argv[1:]:
+        if arg in types_to_process:
+            types_to_process = [arg]
+        if arg in sports_to_process:
+            sports_to_process = [arg]
+    return sports_to_process, types_to_process
+
+
+def _process_leagues(global_resources, leagues, sports_to_process, old_data_loaded_matchups, browser):
+    global_config = global_resources['config']
     league_names = defaultdict(dict)
     data_loaded_matchups = defaultdict(dict)
 
@@ -28,7 +40,7 @@ def _process_leagues(global_res, leagues, sports_list, old_data_loaded_matchups,
         functions_by_type = {'points': points.calculate_tables, 'categories': categories.calculate_tables}
         for league_settings, type_item, _ in leagues:
             sports = league_settings['sports']
-            if sports not in sports_list:
+            if sports not in sports_to_process:
                 continue
 
             schedule = None
@@ -95,11 +107,11 @@ def _process_leagues(global_res, leagues, sports_list, old_data_loaded_matchups,
             calculate_tables_function = functions_by_type[type_item]
             for m in matchups_to_process:
                 tables = calculate_tables_function(
-                    league_settings, schedule, m, scoreboard_data, box_scores, global_res)
+                    league_settings, schedule, m, scoreboard_data, box_scores, global_resources)
 
                 if box_scores:
                     active_stats_tables = active_stats.calculate_tables(
-                        league_settings, m, scoreboard_data, box_scores, global_res['descriptions'])
+                        league_settings, m, scoreboard_data, box_scores, global_resources['descriptions'])
                     tables.update(active_stats_tables)
 
                 for report_type, type_tables in tables.items():
@@ -127,13 +139,26 @@ def _process_leagues(global_res, leagues, sports_list, old_data_loaded_matchups,
         }
 
 
-def _split_for_parallel(leagues_to_process, league_types, league_sizes, count):
-    result_indexes = [[] for _ in range(count)]
-    result_lengths = [0 for _ in range(count)]
+def _split_leagues_to_jobs(types_to_process, n_jobs):
+    leagues_to_process = []
+    index_types = []
+    index_sizes = []
+    leagues_settings = []
+    for type_item in _all_types:
+        leagues_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', f'res/{type_item}.json')
+        leagues = json_load(leagues_path)
+        leagues_settings.extend(leagues)
+        if type_item in types_to_process:
+            leagues_to_process.extend(leagues)
+            index_types.extend([type_item] * len(leagues))
+            index_sizes.extend([l['leagues'].count(',') + 1 for l in leagues])
+
+    result_indexes = [[] for _ in range(n_jobs)]
+    result_lengths = [0 for _ in range(n_jobs)]
 
     settings_grouped = [
         (league_settings, league_type, league_size)
-        for league_settings, league_type, league_size in zip(leagues_to_process, league_types, league_sizes)
+        for league_settings, league_type, league_size in zip(leagues_to_process, index_types, index_sizes)
     ]
     random.shuffle(settings_grouped)
     for single_settings in sorted(settings_grouped, reverse=True, key=itemgetter(2)):
@@ -143,62 +168,31 @@ def _split_for_parallel(leagues_to_process, league_types, league_sizes, count):
         result_lengths[settings_position] += single_settings[2]
         result_indexes[settings_position].append(single_settings)
     
-    return result_indexes
+    return result_indexes, leagues_settings
 
 
-def main(global_res):
-    global_config = global_res['config']
-    sports_list = ['basketball', 'hockey']
-    types_to_process = all_types = ['categories', 'points']
-    for arg in sys.argv[1:]:
-        if arg in types_to_process:
-            types_to_process = [arg]
-        if arg in sports_list:
-            sports_list = [arg]
+def main(global_resources):
+    global_config = global_resources['config']
 
-    leagues_to_process = []
-    index_types = []
-    index_sizes = []
-    leagues_settings = []
-    for type_item in all_types:
-        leagues_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', f'res/{type_item}.json')
-        leagues = json_load(leagues_path)
-        leagues_settings.extend(leagues)
-        if type_item in types_to_process:
-            leagues_to_process.extend(leagues)
-            index_types.extend([type_item] * len(leagues))
-            index_sizes.extend([l['leagues'].count(',') + 1 for l in leagues])
-
+    sports_to_process, types_to_process = _parse_arguments()
     n_jobs = global_config['n_jobs']
-    sleep_timeout = global_config['timeout']
-    settings_splitted = _split_for_parallel(leagues_to_process, index_types, index_sizes, n_jobs)
-
-    league_names_path = os.path.join(_repo_root_dir, 'res/league_names.json')
-    league_names = json_load(league_names_path, defaultdict(dict))
+    settings_splitted, leagues_settings = _split_leagues_to_jobs(types_to_process, n_jobs)
 
     data_loaded_matchups_path = os.path.join(_repo_root_dir, 'res/data_loaded_matchups.config')
     data_loaded_matchups = json_load(data_loaded_matchups_path, defaultdict(dict))
-
+    sleep_timeout = global_config['timeout']
     if n_jobs == 1:
         names_and_matchups = _process_leagues(
-            global_res, settings_splitted[0], sports_list,
+            global_resources, settings_splitted[0], sports_to_process,
             data_loaded_matchups, utils.data.BrowserManager(50, sleep_timeout))
-        for sports in sports_list:
-            league_names[sports].update(names_and_matchups['league_names'][sports])
-            data_loaded_matchups[sports].update(names_and_matchups['data_loaded_matchups'][sports])
-        
-        json_dump(league_names, league_names_path)
-        json_dump(data_loaded_matchups, data_loaded_matchups_path)
-
-        if 'error' in names_and_matchups:
-            raise names_and_matchups['error']
+        names_and_matchups_list = [names_and_matchups]
     else:
         pool = ThreadPool(n_jobs)
         process_params = [
             (
-                deepcopy(global_res),
+                deepcopy(global_resources),
                 job_settings,
-                deepcopy(sports_list),
+                deepcopy(sports_to_process),
                 deepcopy(data_loaded_matchups),
                 utils.data.BrowserManager(50, sleep_timeout)
             )
@@ -207,28 +201,32 @@ def main(global_res):
         names_and_matchups_list = pool.starmap(_process_leagues, process_params)
         pool.close()
         pool.join()
-        error = None
-        for names_and_matchups in names_and_matchups_list:
-            for sports in sports_list:
-                league_names[sports].update(names_and_matchups['league_names'][sports])
-                data_loaded_matchups[sports].update(names_and_matchups['data_loaded_matchups'][sports])
-                if 'error' in names_and_matchups:
-                    error = names_and_matchups['error']
 
-        json_dump(league_names, league_names_path)
-        json_dump(data_loaded_matchups, data_loaded_matchups_path)
+    error = None
+    league_names_path = os.path.join(_repo_root_dir, 'res/league_names.json')
+    league_names = json_load(league_names_path, defaultdict(dict))
+    for names_and_matchups in names_and_matchups_list:
+        for sports in sports_to_process:
+            league_names[sports].update(names_and_matchups['league_names'][sports])
+            data_loaded_matchups[sports].update(names_and_matchups['data_loaded_matchups'][sports])
 
-        if error is not None:
-            raise error
+            if 'error' in names_and_matchups:
+                error = names_and_matchups['error']
 
-    report_types = global_config['report_types']
-    utils.common.save_homepage(report_types, global_config, leagues_settings, league_names)
-    utils.common.save_archive(report_types, global_config, league_names)
-    utils.common.save_report_type_indexes(report_types, global_config, league_names)
+    json_dump(league_names, league_names_path)
+    json_dump(data_loaded_matchups, data_loaded_matchups_path)
+
+    if error is not None:
+        raise error
+
+    utils.common.save_homepage(global_config, leagues_settings, league_names)
+    utils.common.save_archive(global_config, league_names)
+    utils.common.save_report_type_indexes(global_config, league_names)
+
 
 if __name__ == '__main__':
     try:
-        global_res = utils.common.load_global_resources()
-        main(global_res)
+        global_resources = utils.common.load_global_resources()
+        main(global_resources)
     except Exception as e:
         traceback.print_exc()

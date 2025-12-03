@@ -105,10 +105,11 @@ def get_places(scores_dict, reverse):
         places[team] = 1 + np.mean(score_indexes)
     return places
 
-def save_archive(report_types, global_config, league_names):
+
+def save_archive(global_config, league_names):
     sports_indexes = defaultdict(lambda: defaultdict(list))
     for sports in _sports_keys:
-        for report_type in report_types:
+        for report_type in global_config['report_types']:
             github = global_config[report_type]['github']
             reports_repo_name = global_config[report_type]['repo_name']
             reports_dir_name = global_config[report_type]['dir_name']
@@ -136,7 +137,7 @@ def save_archive(report_types, global_config, league_names):
     _save_html('index', template_params, archive_path)
 
 
-def save_homepage(report_types, global_config, index_config, league_names):
+def save_homepage(global_config, index_config, league_names):
     sports_indexes = defaultdict(lambda: defaultdict(list))
     today = datetime.datetime.today().date()
     season_start_year = today.year if today.month > 6 else today.year - 1
@@ -146,7 +147,7 @@ def save_homepage(report_types, global_config, index_config, league_names):
         league_id = league_settings['leagues'].split(',')[0]
         sports = league_settings['sports']
 
-        for report_type in report_types:
+        for report_type in global_config['report_types']:
             github = global_config[report_type]['github']
             reports_repo_name = global_config[report_type]['repo_name']
             reports_dir_name = global_config[report_type]['dir_name']
@@ -173,8 +174,8 @@ def save_homepage(report_types, global_config, index_config, league_names):
     _save_html('index', template_params, homepage_path)
 
 
-def save_report_type_indexes(report_types, global_config, league_names):
-    for report_type in report_types:
+def save_report_type_indexes(global_config, league_names):
+    for report_type in global_config['report_types']:
         github = global_config[report_type]['github']
         all_leagues = defaultdict(list)
         reports_repo_name = global_config[report_type]['repo_name']
