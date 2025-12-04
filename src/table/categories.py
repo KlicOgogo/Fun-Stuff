@@ -25,7 +25,7 @@ _no_value_cols = {
 }
 
 
-def _get_extremums(df, less_to_win_categories, is_opponent, n_last=None):
+def _get_extremums(df, less_win_categories, is_opponent, n_last=None):
     best = {}
     worst = {}
     for col in df.columns:
@@ -33,7 +33,7 @@ def _get_extremums(df, less_to_win_categories, is_opponent, n_last=None):
             best[col], worst[col] = ('', '')
         elif col in _categories | {'MIN', 'GP'}:
             extremums = (df[col].max(), df[col].min())
-            best[col], worst[col] = extremums[::-1] if col in less_to_win_categories else extremums
+            best[col], worst[col] = extremums[::-1] if col in less_win_categories else extremums
         else:
             scores_for_sort = []
             power_calc_lambda = lambda x: x[0] + x[2] * 0.5
@@ -81,7 +81,7 @@ def _matchup_metrics(metrics):
     return df
 
 
-def pairwise_comparisons(comparisons_data, matchups, is_opponent, n_last, less_to_win_categories):
+def pairwise_comparisons(comparisons_data, matchups, is_opponent, n_last, less_win_categories):
     df_data = copy.deepcopy(comparisons_data)
     for team in df_data:
         team_stats = [np.array(list(map(int, score.split('-')))) for score in df_data[team]]
@@ -104,7 +104,7 @@ def pairwise_comparisons(comparisons_data, matchups, is_opponent, n_last, less_t
     sort_sign = 1 if is_opponent else -1
     df = df.iloc[np.lexsort((sort_sign * df['W  '], sort_sign * (df['W  '] + df['D'] * 0.5)))]
     df = add_position_column(df)
-    best, worst = _get_extremums(df, less_to_win_categories, is_opponent, n_last)
+    best, worst = _get_extremums(df, less_win_categories, is_opponent, n_last)
     styler = df.style.format('{:g}', subset=pd.IndexSlice[list(df_data.keys()), perc_cols]).\
         set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
         apply(lambda s: style.extremum(s, best[s.name], worst[s.name]), subset=matchups).\
@@ -112,7 +112,7 @@ def pairwise_comparisons(comparisons_data, matchups, is_opponent, n_last, less_t
     return styler.to_html()
 
 
-def expected_category_stats(data, expected_data, matchups, less_to_win_categories):
+def expected_category_stats(data, expected_data, matchups, less_win_categories):
     df_data = copy.deepcopy(expected_data)
     for team in df_data:
         team_stats_array = np.vstack(df_data[team])
@@ -129,7 +129,7 @@ def expected_category_stats(data, expected_data, matchups, less_to_win_categorie
     df = df_teams.merge(df, how='outer', left_index=True, right_index=True)
     df = df.iloc[np.lexsort((-df['WD'], -df['Diff']))]
     df = add_position_column(df)
-    best, worst = _get_extremums(df, less_to_win_categories, is_opponent=False)
+    best, worst = _get_extremums(df, less_win_categories, is_opponent=False)
     extremum_lambda = lambda s: style.extremum(s, best[s.name], worst[s.name])
     styler = df.style.format('{:g}', subset=pd.IndexSlice[list(df_data.keys()), ['DD  ', 'WD', 'LD', 'Diff']]).\
         set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
@@ -163,7 +163,7 @@ def expected_win_stats(data, expected_data, matchups):
     return styler.to_html()
 
 
-def matchup(stats_with_plays, places_with_plays, places_sum, categories_with_plays, less_to_win_categories, metrics):
+def matchup(stats_with_plays, places_with_plays, places_sum, categories_with_plays, less_win_categories, metrics):
     is_overall = len(set(map(itemgetter(2), stats_with_plays.keys()))) > 1
     df = pd.DataFrame(list(map(itemgetter(2, 0) if is_overall else itemgetter(0), stats_with_plays.keys())),
                       index=stats_with_plays.keys(), columns=['League', 'Team'] if is_overall else ['Team'])
@@ -184,7 +184,7 @@ def matchup(stats_with_plays, places_with_plays, places_sum, categories_with_pla
     df = df.iloc[np.lexsort((-df['PTS'], df['SUM']))]
     df = add_position_column(df)
 
-    best, worst = _get_extremums(df, less_to_win_categories, is_opponent=False)
+    best, worst = _get_extremums(df, less_win_categories, is_opponent=False)
     extremum_cols = categories_with_plays + ['Score']
     if 'ExpScore' in metrics:
         extremum_cols.append('ExpScore')
