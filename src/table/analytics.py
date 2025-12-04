@@ -69,7 +69,7 @@ def h2h_category_record(places_by_categories, categories, my_team_key, n_last):
             wins = (my_team_places < opponent_places).sum()
             losses = (my_team_places > opponent_places).sum()
             draws = (my_team_places == opponent_places).sum()
-            
+
             df_data[team].append(f'{wins}-{losses}-{draws}')
             h2h_records[team].append([wins, losses, draws])
 
@@ -104,13 +104,13 @@ def h2h_category_record(places_by_categories, categories, my_team_key, n_last):
 def power_predictions(places_by_categories, my_team_key, matchups):
     df_data = defaultdict(list)
     sum_stats = defaultdict(list)
-    
+
     for m in matchups:
         matchup_team_data = defaultdict(list)
         for category in places_by_categories:
             for team in places_by_categories[category]:
                 matchup_team_data[team].append(np.mean(places_by_categories[category][team][:m]))
-        
+
         my_team_places = np.array(matchup_team_data[my_team_key])
         for team in matchup_team_data:
             if team == my_team_key:
@@ -119,7 +119,7 @@ def power_predictions(places_by_categories, my_team_key, matchups):
             wins = (my_team_places < opponent_places).sum()
             losses = (my_team_places > opponent_places).sum()
             draws = (my_team_places == opponent_places).sum()
-            
+
             df_data[team].append(f'{wins}-{losses}-{draws}')
             sum_stats[team].append([wins, losses, draws])
 
@@ -144,7 +144,7 @@ def power_predictions_h2h(places_by_categories):
     for category in places_by_categories:
         for team in places_by_categories[category]:
             category_powers[team].append(np.mean(places_by_categories[category][team]))
-    
+
     comparisons_h2h = defaultdict(lambda: defaultdict(Counter))
     for team in category_powers:
         team_places = np.array(category_powers[team])

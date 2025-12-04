@@ -33,7 +33,7 @@ def _league_tables(sports, matchup, league_active_stats, descriptions):
                 tables.append([
                     f'{team_name}: {group}', descriptions['active_stats'],
                     table.active_stats.matchup(team_stats_summarized, team_categories)])
-    
+
     return tables
 
 

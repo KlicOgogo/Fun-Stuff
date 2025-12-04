@@ -19,7 +19,7 @@ _hockey_summarizable_cols = [
     'Skater Games Played',
     'Goals', 'Assists', 'Points',
     'Plus/Minus',
-    'Penalty Minutes', 
+    'Penalty Minutes',
     'Faceoffs Won',
     'Shots on Goal',
     'Hits',
@@ -79,5 +79,5 @@ def summarize_team_stats(stats_list, sports):
                     stats_summarized[player][cat] += int(cat_value)
                 elif cat == 'FPTS':
                     stats_summarized[player][cat] += float(cat_value)
-                
+
     return stats_summarized

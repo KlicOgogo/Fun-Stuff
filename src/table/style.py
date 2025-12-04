@@ -32,7 +32,7 @@ def _score(s, is_opponent):
     color_indexes = np.array([len(flag_lambdas) for _ in range(len(s))])
     for i in range(len(flag_lambdas)):
         color_indexes[flag_lambdas[i](s, s)] = i
-    
+
     colors = ['blue', 'green', 'orange', 'red']
     if is_opponent:
         colors = list(reversed(colors))

@@ -87,7 +87,7 @@ def _process_league_groups(global_resources, leagues, sports_to_process, data_lo
             online_matchups = []
             if is_full_support and not is_data_loaded:
                 online_matchups = [matchup] if is_season_ended else refresh_range
-            process_matchups = refresh_range if is_full_support else [matchup] 
+            process_matchups = refresh_range if is_full_support else [matchup]
 
             league_names = _process_group(
                 group_settings, schedule, scoring_type, browser, global_resources, online_matchups, process_matchups)
@@ -140,7 +140,7 @@ def _split_leagues_to_jobs(types_to_process, n_jobs):
         settings_position = lengths_with_sizes.index(min_value)
         result_lengths[settings_position] += single_settings[2]
         result_indexes[settings_position].append(single_settings)
-    
+
     return result_indexes, leagues_settings
 
 

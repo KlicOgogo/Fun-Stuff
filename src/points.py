@@ -106,12 +106,12 @@ def _overall_tables(n_leagues, matchup, overall_scores, global_resources):
 
     n_top = int(len(overall_scores) / n_leagues)
     top_common_cols = ['Team', 'Score', 'League']
-    
+
     last_matchup_scores = [(team[0], overall_scores[team][-1], team[2]) for team in overall_scores]
     overall_tables.append([
         titles['best_matchup'], descriptions['best_matchup'],
         table.points.top(last_matchup_scores, n_top, top_common_cols, n_leagues == 1)])
-    
+
     each_matchup_scores = []
     for team in overall_scores:
         team_scores = [(team[0], score, team[2], index + 1) for index, score in enumerate(overall_scores[team])]
@@ -119,7 +119,7 @@ def _overall_tables(n_leagues, matchup, overall_scores, global_resources):
     overall_tables.append([
         titles['best_season'], descriptions['best_season'],
         table.points.top(each_matchup_scores, n_top, top_common_cols + ['Matchup'], n_leagues == 1)])
-    
+
     if n_leagues > 1:
         totals = [(team[0], np.sum(scores), team[2], scores[-1]) for team, scores in overall_scores.items()]
         overall_tables.append([

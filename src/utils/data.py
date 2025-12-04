@@ -26,7 +26,7 @@ class BrowserManager(object):
         self.__pageCount = 0
         self.__loadTimeout = 30
         self.__browser.set_page_load_timeout(self.__loadTimeout)
-        
+
     def read_page_source(self, url):
         if self.__pageCount == self.__pageLimit:
             self.clear()
@@ -48,7 +48,7 @@ class BrowserManager(object):
             self.__browser.execute_script('window.stop();')
         finally:
             time.sleep(self.__sleep_timeout)
-        
+
         self.__pageCount += 1
         html_soup = BeautifulSoup(self.__browser.page_source, features='html.parser')
         return html_soup
@@ -67,14 +67,14 @@ def _parse_box_scores_titles(tables):
     result = []
     for table_html in tables:
         subtable_list = table_html.findAll('table')
-        
+
         columns_ordered = []
         columns_to_short = {}
-        
+
         if not subtable_list:
             result.append((columns_ordered, columns_to_short))
             continue
-            
+
         columns_html = subtable_list[1].findAll('tr', {'class': ['Table__even']})[-1]
         for item in columns_html.findAll('div', {'class': ['table--cell']}):
             categories = item['title']
@@ -99,13 +99,13 @@ def _parse_box_scores_data(tables):
         if not subtable_list:
             result.append({})
             continue
-        
+
         players = []
         for item in subtable_list[0].findAll('tr', {'class': ['Table__odd']}):
             player_name_html = item.findAll('div', {'class': ['player__column']})
             if len(player_name_html) == 1:
                 players.append(player_name_html[0]['title'])
-        
+
         player_stats = []
         players_html = subtable_list[1].findAll('tr', {'class': ['Table__odd']})
         for index, player_item in enumerate(players_html):
@@ -122,7 +122,7 @@ def _parse_box_scores_data(tables):
                 else:
                     stats[categories] = values
             player_stats.append(stats)
-        
+
         if len(subtable_list) > 2:
             players_html = subtable_list[2].findAll('tr', {'class': ['Table__odd']})
             for index, player_item in enumerate(players_html):
@@ -335,7 +335,7 @@ def _matchup_category_pairs(scoreboard_html, league_id, league_name, team_names)
         categories = [header.text for header in rows[-3].findAll('th', {'class': 'Table__TH'})[1:]]
         first_team_stats = [data.text for data in rows[-2].findAll('td', {'class': 'Table__TD'})[1:]]
         second_team_stats = [data.text for data in rows[-1].findAll('td', {'class': 'Table__TD'})[1:]]
-        
+
         pair = []
         for team, team_stats in zip(teams, [first_team_stats, second_team_stats]):
             stats = []
@@ -376,7 +376,7 @@ def _schedule(league_id, sports, is_playoffs_support, is_offline, browser):
     season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
     offline_data_dir = os.path.join(_offline_data_dir, sports, league_id, season_str)
     Path(offline_data_dir).mkdir(parents=True, exist_ok=True)
-    
+
     offline_schedule_path = os.path.join(offline_data_dir, 'schedule.pkl')
     if os.path.isfile(offline_schedule_path) and is_offline:
         with open(offline_schedule_path, 'rb') as fp:
@@ -391,7 +391,7 @@ def _schedule(league_id, sports, is_playoffs_support, is_offline, browser):
         schedule_html = browser.read_page_source(schedule_url)
         div_captions = schedule_html.findAll('div', {'class': 'table-caption'})
         caption_captions = schedule_html.findAll('caption', {'class': 'Table__Caption'})
-    
+
     league_schedule = {}
     number = 0
     for matchups_html_list in [div_captions, caption_captions]:

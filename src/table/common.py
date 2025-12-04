@@ -61,7 +61,7 @@ def places(places_data, matchups, opp_flag, is_overall, n_last):
 
         df_data[team].append(np.sum(places_data[team][-n_last:]))
         df_data[team].append(np.sum(places_data[team]))
-        
+
     df_teams = pd.DataFrame(list(map(itemgetter(2, 0) if is_overall else itemgetter(0), df_data.keys())),
                             index=df_data.keys(), columns=['League', 'Team'] if is_overall else ['Team'])
     recent_col = f'Last{n_last}'
@@ -94,7 +94,7 @@ def scores(scores_data, matchups, opp_flag, n_last):
 
         df_data[team].append(np.sum(scores_data[team][-n_last:]))
         df_data[team].append(np.sum(scores_data[team]))
-        
+
     df_teams = pd.DataFrame(list(map(itemgetter(0), df_data.keys())), index=df_data.keys(), columns=['Team'])
     emoji_cols = ['&#128526;', '&#128527;', '&#128532;', '&#128557;']
     recent_col = f'Last{n_last}'

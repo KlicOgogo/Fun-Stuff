@@ -21,7 +21,7 @@ def _send_bot_message(text, is_debug, is_delayed):
 
     if is_delayed:
         time.sleep(bot_settings['sleep_time'])
-    
+
     global _bot
     if not _bot:
         _bot = Bot(token=bot_settings['token'])

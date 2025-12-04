@@ -60,7 +60,7 @@ def _get_previous_reports(index_relative_path, matchup, schedule, github):
     reports = [html for html in html_list if re.match(r'matchup_\d+\.html', html)]
     matchup_list = [int(re.findall(r'matchup_(\d+)\.html', r)[0]) for r in reports]
     prev_reports = [m for m in matchup_list if m < matchup]
-    
+
     previous_reports_data = {}
     for m in prev_reports:
         report_link = f'https://{github}.github.io/{index_relative_path}/matchup_{m}.html'
@@ -77,7 +77,7 @@ def _get_season_reports(season_relative_path, github):
         found = re.findall(r'matchup_(\d+)\.html', item)
         if len(found) == 1 and os.path.isfile(os.path.join(reports_dir, item)):
             matchups.append(int(found[0]))
-    
+
     season_reports = {}
     latest_report_url = None
     for m in sorted(matchups, reverse=True):
@@ -188,7 +188,7 @@ def save_report_type_indexes(global_config, league_names):
             for path in os.listdir(sports_reports_dir):
                 if os.path.isdir(os.path.join(sports_reports_dir, path)):
                     all_leagues[sports].append(path)
-        
+
         indexes = {}
         index_url_prefix = f'https://{github}.github.io/{reports_repo_name}/{reports_dir_name}'
         for sports in _sports_keys:
@@ -196,7 +196,7 @@ def save_report_type_indexes(global_config, league_names):
                 league_name = f'{league_names[sports][league_id]} ({_sports_to_display[sports]})'
                 league_link = f'{index_url_prefix}/{sports}/{league_id}/index.html'
                 indexes[league_name] = league_link
-        
+
         template_params = {
             'title': f'Fantasy Fun Stuff ({report_type})',
             'indexes': indexes,
