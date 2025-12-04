@@ -21,21 +21,6 @@ _all_types = ['categories', 'points']
 _tables_calculators = {'points': points.calculate_tables, 'categories': categories.calculate_tables}
 
 
-def _get_group_schedule(group_settings, browser, use_offline_schedule):
-    schedule = None
-    sports = group_settings['sports']
-    for league in group_settings['leagues'].split(','):
-        current_schedule = utils.data.schedule(
-            league, sports, group_settings['is_playoffs_support'], use_offline_schedule, browser)
-        if schedule is None:
-            schedule = current_schedule
-        elif schedule != current_schedule:
-            schedule = None
-            break
-
-    return schedule
-
-
 def _process_group(group_settings, schedule, scoring_type, browser, global_resources, online_matchups, matchups):
     global_config = global_resources['config']
     sports = group_settings['sports']
@@ -82,7 +67,7 @@ def _process_league_groups(global_resources, leagues, sports_to_process, data_lo
                 continue
 
             global_config = global_resources['config']
-            schedule = _get_group_schedule(group_settings, browser, global_config['use_offline_schedule'])
+            schedule = utils.data.group_schedule(group_settings, browser, global_config['use_offline_schedule'])
             if schedule is None:
                 continue
 

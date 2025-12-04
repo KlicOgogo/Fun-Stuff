@@ -370,7 +370,7 @@ def player_games(matchup_box_scores_data):
     return player_games if np.sum(list(player_games.values())) != 0 else None
 
 
-def schedule(league_id, sports, is_playoffs_support, is_offline, browser):
+def _schedule(league_id, sports, is_playoffs_support, is_offline, browser):
     today = datetime.datetime.today().date()
     season_start_year = today.year if today.month > 6 else today.year - 1
     season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
@@ -380,8 +380,8 @@ def schedule(league_id, sports, is_playoffs_support, is_offline, browser):
     offline_schedule_path = os.path.join(offline_data_dir, 'schedule.pkl')
     if os.path.isfile(offline_schedule_path) and is_offline:
         with open(offline_schedule_path, 'rb') as fp:
-            group_schedule = pickle.load(fp)
-            return group_schedule
+            league_schedule = pickle.load(fp)
+            return league_schedule
 
     schedule_url = f'https://fantasy.espn.com/{sports}/league/schedule?leagueId={league_id}'
 
@@ -392,17 +392,32 @@ def schedule(league_id, sports, is_playoffs_support, is_offline, browser):
         div_captions = schedule_html.findAll('div', {'class': 'table-caption'})
         caption_captions = schedule_html.findAll('caption', {'class': 'Table__Caption'})
     
-    group_schedule = {}
+    league_schedule = {}
     number = 0
     for matchups_html_list in [div_captions, caption_captions]:
         for matchup_html in matchups_html_list:
             number, dates, is_playoffs = _get_matchup_schedule(matchup_html.text, number)
             if not is_playoffs or is_playoffs_support:
-                group_schedule[number] = (dates, is_playoffs)
+                league_schedule[number] = (dates, is_playoffs)
 
     with open(offline_schedule_path, 'wb') as fp:
-        pickle.dump(group_schedule, fp)
-    return group_schedule
+        pickle.dump(league_schedule, fp)
+    return league_schedule
+
+
+def group_schedule(group_settings, browser, use_offline_schedule):
+    schedule = None
+    sports = group_settings['sports']
+    for league in group_settings['leagues'].split(','):
+        current_schedule = _schedule(
+            league, sports, group_settings['is_playoffs_support'], use_offline_schedule, browser)
+        if schedule is None:
+            schedule = current_schedule
+        elif schedule != current_schedule:
+            schedule = None
+            break
+
+    return schedule
 
 
 def scoreboards(league_id, sports, matchup, browser, online_matchups, is_category_league):
