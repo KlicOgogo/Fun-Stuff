@@ -151,10 +151,10 @@ def power_predictions_h2h(places_by_categories):
         for opp in category_powers:
             if team == opp:
                 continue
-            opp_places = np.array(category_powers[opp])
-            comparisons_h2h[team][opp]['W'] = (team_places < opp_places).sum()
-            comparisons_h2h[team][opp]['L'] = (team_places > opp_places).sum()
-            comparisons_h2h[team][opp]['D'] = (team_places == opp_places).sum()
+            opponent_places = np.array(category_powers[opp])
+            comparisons_h2h[team][opp]['W'] = (team_places < opponent_places).sum()
+            comparisons_h2h[team][opp]['L'] = (team_places > opponent_places).sum()
+            comparisons_h2h[team][opp]['D'] = (team_places == opponent_places).sum()
     return common.h2h(comparisons_h2h)
 
 

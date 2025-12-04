@@ -112,7 +112,7 @@ def pairwise_comparisons(comparisons_data, matchups, is_opponent, n_last, less_t
     return styler.to_html()
 
 
-def expected_category_stats(data, expected_data, matchup, less_to_win_categories):
+def expected_category_stats(data, expected_data, matchups, less_to_win_categories):
     df_data = copy.deepcopy(expected_data)
     for team in df_data:
         team_stats_array = np.vstack(df_data[team])
@@ -124,7 +124,6 @@ def expected_category_stats(data, expected_data, matchup, less_to_win_categories
         df_data[team].append(df_data[team][-3] + 0.5 * df_data[team][-1])
 
     df_teams = pd.DataFrame(list(map(itemgetter(0), df_data.keys())), index=df_data.keys(), columns=['Team'])
-    matchups = np.arange(1, matchup + 1)
     df = pd.DataFrame(list(df_data.values()), index=df_data.keys(),
                       columns=[*matchups, 'Total', 'Real', 'WD', 'LD', 'DD  ', 'Diff'])
     df = df_teams.merge(df, how='outer', left_index=True, right_index=True)
