@@ -10,7 +10,7 @@ from table.common import add_position_column
 
 
 _hockey_categories = {
-        'G', 'A', '+/-', 'PIM', 'FOW', 'ATOI', 'SOG', 'HIT', 'BLK', 'DEF', 'STP', 'PPP', 'SHP', 
+        'G', 'A', '+/-', 'PIM', 'FOW', 'ATOI', 'SOG', 'HIT', 'BLK', 'DEF', 'STP', 'PPP', 'SHP',
         'W', 'GA', 'SV', 'GAA', 'SV%', 'SO'
     }
 _basketball_categories = {
@@ -61,7 +61,7 @@ def _matchup_metrics(metrics):
     if expected_scores is not None:
         exp_score_df_data = {}
         for team in expected_scores:
-            exp_score_df_data[team] = '-'.join(map(lambda x: f'{x:.1f}', expected_scores[team]))
+            exp_score_df_data[team] = '-'.join(map(lambda x: f'{np.round(x, 1):g}', expected_scores[team]))
         df_exp_score = pd.DataFrame(list(exp_score_df_data.values()), index=exp_score_df_data.keys(),
                                     columns=['ExpScore'])
         df = df.merge(df_exp_score, how='outer', left_index=True, right_index=True)
@@ -96,7 +96,7 @@ def pairwise_comparisons(comparisons_data, matchups, is_opponent, n_last, less_t
         df_data[team].append(np.round(recent_team_power_norm, 2))
 
         df_data[team].append(np.round(team_power_norm, 2))
-    
+
     df_teams = pd.DataFrame(list(map(itemgetter(0), df_data.keys())), index=df_data.keys(), columns=['Team'])
     perc_cols = [f'L{n_last}%', '%']
     df = pd.DataFrame(list(df_data.values()), index=df_data.keys(), columns=[*matchups, 'W  ', 'L', 'D', *perc_cols])
@@ -120,7 +120,7 @@ def expected_category_stats(data, expected_data, matchups, less_to_win_categorie
         df_data[team].append(data[team])
         df_data[team].extend(map(lambda x: np.round(x, 1), df_data[team][-1] - df_data[team][-2]))
         for i in range(len(df_data[team]) - 3):
-            df_data[team][i] = '-'.join(map(lambda x: f'{x:.1f}', df_data[team][i][:3]))
+            df_data[team][i] = '-'.join(map(lambda x: f'{np.round(x, 1):g}', df_data[team][i][:3]))
         df_data[team].append(df_data[team][-3] + 0.5 * df_data[team][-1])
 
     df_teams = pd.DataFrame(list(map(itemgetter(0), df_data.keys())), index=df_data.keys(), columns=['Team'])
@@ -149,7 +149,7 @@ def expected_win_stats(data, expected_data, matchups):
         df_data[team].append(record_str)
         df_data[team].extend([data[team][res] - expected_record[res] for res in res_order])
         df_data[team].append(df_data[team][-3] + 0.5 * df_data[team][-1])
-    
+
     df_teams = pd.DataFrame(list(map(itemgetter(0), df_data.keys())), index=df_data.keys(), columns=['Team'])
     df = pd.DataFrame(list(df_data.values()), index=df_data.keys(),
                       columns=[*matchups, 'Total', 'Real', 'WD', 'LD', 'DD  ', 'Diff'])
