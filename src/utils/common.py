@@ -247,7 +247,7 @@ def save_league_index(league_name, league_settings, global_config):
         _save_html('league_home', template_params, league_home_path)
 
 
-def save_tables(sports, league_id, matchup, schedule, global_config, report_type, params):
+def save_tables(group_settings, matchup, schedule, global_config, report_type, params):
     today = datetime.datetime.today().date()
     season_start_year = today.year if today.month > 6 else today.year - 1
     season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
@@ -259,7 +259,9 @@ def save_tables(sports, league_id, matchup, schedule, global_config, report_type
     github = global_config[report_type]['github']
     repo_name = global_config[report_type]['repo_name']
     dir_name = global_config[report_type]['dir_name']
-    season_reports_dir = os.path.join(repo_name, dir_name, sports, league_id, season_str)
+    sports = group_settings['sports']
+    main_league = group_settings['leagues'].split(',')[0]
+    season_reports_dir = os.path.join(repo_name, dir_name, sports, main_league, season_str)
     previous_reports = _get_previous_reports(season_reports_dir, matchup, schedule, github)
     template_params = {
         'header': f'Fantasy Fun Stuff ({report_type})',

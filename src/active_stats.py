@@ -37,15 +37,18 @@ def _league_tables(sports, matchup, league_active_stats, descriptions):
     return tables
 
 
-def calculate_tables(league_settings, matchup, scoreboard_data, active_stats_data, descriptions):
+def calculate_tables(league_settings, matchup, scoreboards, box_scores, descriptions):
+    if not box_scores:
+        return {}
+
     leagues = league_settings['leagues'].split(',')
     sports = league_settings['sports']
 
     leagues_tables = []
     for league_id in leagues:
-        _, _, _, league_name = scoreboard_data[league_id]
+        _, _, _, league_name = scoreboards[league_id]
 
-        league_active_stats = active_stats_data[league_id]
+        league_active_stats = box_scores[league_id]
         tables = _league_tables(sports, matchup, league_active_stats, descriptions)
         link = f'https://fantasy.espn.com/{sports}/league?leagueId={league_id}'
         leagues_tables.append([league_name, link, tables])

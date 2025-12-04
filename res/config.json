@@ -1,7 +1,6 @@
 {
   "n_jobs": 2,
   "use_offline_schedule": true,
-  "use_offline_data": false,
   "refresh_matchups": 1,
   "timeout": 8,
   "main_github": "klicogogo",

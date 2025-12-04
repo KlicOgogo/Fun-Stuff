@@ -1,3 +1,4 @@
+from collections import defaultdict
 import datetime
 import os
 from pathlib import Path
@@ -228,7 +229,7 @@ def _get_team_names(scoreboard_html):
     return team_names
 
 
-def box_scores_offline(league_id, league_name, team_names, sports, matchup):
+def _box_scores_offline(league_id, league_name, team_names, sports, matchup):
     today = datetime.datetime.today().date()
     season_start_year = today.year if today.month > 6 else today.year - 1
     season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
@@ -247,11 +248,11 @@ def box_scores_offline(league_id, league_name, team_names, sports, matchup):
     return None
 
 
-def box_scores_online(league_id, sports, matchup, pairs, schedule, browser):
+def _box_scores_online(league_id, sports, matchup, pairs, group_schedule, browser):
     today = datetime.datetime.today().date()
     season_start_year = today.year if today.month > 6 else today.year - 1
 
-    scoring_period_id = (schedule[matchup][0][0] - schedule[1][0][0]).days + 1
+    scoring_period_id = (group_schedule[matchup][0][0] - group_schedule[1][0][0]).days + 1
     box_scores_stats = {}
     for pair in pairs:
         team_pair = (pair[0][0], pair[1][0])
@@ -262,7 +263,8 @@ def box_scores_online(league_id, sports, matchup, pairs, schedule, browser):
         data_html = []
         while len(data_html) == 0:
             html_soup = browser.read_page_source(url)
-            data_html = html_soup.findAll(['div', 'span'], {'class': ['players-table__sortable', 'team-name truncate']})
+            data_html = html_soup.findAll(
+                ['div', 'span'], {'class': ['players-table__sortable', 'team-name truncate']})
 
         tables_pairs = [[], []]
         current_team_index = -1
@@ -285,6 +287,29 @@ def box_scores_online(league_id, sports, matchup, pairs, schedule, browser):
     with open(offline_data_path, 'wb') as fp:
         pickle.dump(box_scores_stats, fp)
     return box_scores_stats
+
+
+def group_box_scores(group_settings, group_schedule, matchup, browser, scoreboards, online_page_matchups):
+    if not group_settings['is_full_support']:
+        return None
+
+    sports = group_settings['sports']
+    box_scores = defaultdict(list)
+    for league in group_settings['leagues'].split(','):
+        pairs, team_names, _, league_name = scoreboards[league]
+        for m in range(matchup):
+            current_matchup = m + 1
+            is_offline = current_matchup not in online_page_matchups
+            matchup_box_scores = None
+            if is_offline:
+                matchup_box_scores = _box_scores_offline(
+                    league, league_name, team_names, sports, current_matchup)
+            if matchup_box_scores is None:
+                matchup_box_scores = _box_scores_online(
+                    league, sports, current_matchup, pairs[m], group_schedule, browser)
+            box_scores[league].append(matchup_box_scores)
+
+    return box_scores
 
 
 def goalkeeper_games(matchup_box_scores_data):
@@ -355,8 +380,8 @@ def schedule(league_id, sports, is_playoffs_support, is_offline, browser):
     offline_schedule_path = os.path.join(offline_data_dir, 'schedule.pkl')
     if os.path.isfile(offline_schedule_path) and is_offline:
         with open(offline_schedule_path, 'rb') as fp:
-            schedule = pickle.load(fp)
-            return schedule
+            group_schedule = pickle.load(fp)
+            return group_schedule
 
     schedule_url = f'https://fantasy.espn.com/{sports}/league/schedule?leagueId={league_id}'
 
@@ -367,20 +392,20 @@ def schedule(league_id, sports, is_playoffs_support, is_offline, browser):
         div_captions = schedule_html.findAll('div', {'class': 'table-caption'})
         caption_captions = schedule_html.findAll('caption', {'class': 'Table__Caption'})
     
-    schedule = {}
+    group_schedule = {}
     number = 0
     for matchups_html_list in [div_captions, caption_captions]:
         for matchup_html in matchups_html_list:
             number, dates, is_playoffs = _get_matchup_schedule(matchup_html.text, number)
             if not is_playoffs or is_playoffs_support:
-                schedule[number] = (dates, is_playoffs)
+                group_schedule[number] = (dates, is_playoffs)
 
     with open(offline_schedule_path, 'wb') as fp:
-        pickle.dump(schedule, fp)
-    return schedule
+        pickle.dump(group_schedule, fp)
+    return group_schedule
 
 
-def scoreboard(league_id, sports, matchup, browser, online_matchups, is_category_league):
+def scoreboards(league_id, sports, matchup, browser, online_matchups, is_category_league):
     today = datetime.datetime.today().date()
     season_start_year = today.year if today.month > 6 else today.year - 1
     season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
