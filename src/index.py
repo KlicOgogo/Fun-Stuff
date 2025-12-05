@@ -21,12 +21,24 @@ _all_types = ['categories', 'points']
 _tables_calculators = {'points': points.calculate_tables, 'categories': categories.calculate_tables}
 
 
-def _process_group(group_settings, schedule, scoring_type, browser, global_resources, online_matchups, matchups):
+def _calculate_online_matchups(refresh_range, matchup, is_season_ended, is_data_loaded, is_full_support):
+    if not is_full_support:
+        return []
+
+    if is_season_ended:
+        return [matchup]
+
+    return [] if is_data_loaded else refresh_range
+
+
+def _process_group(group_settings, schedule, scoring_type, browser, global_resources, matchup_info):
     global_config = global_resources['config']
     sports = group_settings['sports']
     scoreboards = {}
     league_names = {}
-    current_matchup = max(matchups)
+
+    current_matchup = matchup_info['current']
+    online_matchups = matchup_info['online']
     for league in group_settings['leagues']:
         scoreboards[league] = utils.data.scoreboards(
             league, sports, current_matchup, browser, online_matchups, scoring_type == 'categories')
@@ -39,7 +51,7 @@ def _process_group(group_settings, schedule, scoring_type, browser, global_resou
         group_settings, schedule, current_matchup, browser, scoreboards, online_matchups)
 
     tables_calculator = _tables_calculators[scoring_type]
-    for matchup in matchups:
+    for matchup in matchup_info['to_process']:
         tables = tables_calculator(group_settings, schedule, matchup, scoreboards, box_scores, global_resources)
 
         active_stats_tables = active_stats.calculate_tables(
@@ -84,13 +96,13 @@ def _process_league_groups(global_resources, leagues, sports_to_process, data_lo
 
             refresh_range_left = max(1, matchup - global_config['refresh_matchups'])
             refresh_range = list(range(refresh_range_left, matchup + 1))
-            online_matchups = []
-            if is_full_support and not is_data_loaded:
-                online_matchups = [matchup] if is_season_ended else refresh_range
+            online_matchups = _calculate_online_matchups(
+                refresh_range, matchup, is_season_ended, is_data_loaded, is_full_support)
             process_matchups = refresh_range if is_full_support else [matchup]
 
+            matchup_info = {'current': matchup, 'online': online_matchups, 'to_process': process_matchups}
             league_names = _process_group(
-                group_settings, schedule, scoring_type, browser, global_resources, online_matchups, process_matchups)
+                group_settings, schedule, scoring_type, browser, global_resources, matchup_info)
 
             result['league_names'][sports].update(league_names)
             result['data_loaded_matchups'][sports][main_league] = list(set(group_loaded_matchups + [matchup_str]))
