@@ -140,7 +140,7 @@ def _overall_tables(n_leagues, matchup, overall_scores, global_resources):
 
 
 def calculate_tables(league_settings, schedule, matchup, scoreboards, box_scores, global_resources):
-    leagues = league_settings['leagues'].split(',')
+    leagues = league_settings['leagues']
     sports = league_settings['sports']
 
     overall_scores = defaultdict(list)

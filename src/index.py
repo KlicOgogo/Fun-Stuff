@@ -27,12 +27,12 @@ def _process_group(group_settings, schedule, scoring_type, browser, global_resou
     scoreboards = {}
     league_names = {}
     current_matchup = max(matchups)
-    for league in group_settings['leagues'].split(','):
+    for league in group_settings['leagues']:
         scoreboards[league] = utils.data.scoreboards(
             league, sports, current_matchup, browser, online_matchups, scoring_type == 'categories')
         league_names[league] = scoreboards[league][3]
 
-    main_league = group_settings['leagues'].split(',')[0]
+    main_league = group_settings['leagues'][0]
     main_league_name = league_names[main_league]
 
     box_scores = utils.data.group_box_scores(
@@ -75,7 +75,7 @@ def _process_league_groups(global_resources, leagues, sports_to_process, data_lo
             if matchup == -1:
                 continue
 
-            main_league = group_settings['leagues'].split(',')[0]
+            main_league = group_settings['leagues'][0]
             sports = group_settings['sports']
             group_loaded_matchups = data_loaded_matchups[sports].get(main_league, [])
             matchup_str = str(matchup)

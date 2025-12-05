@@ -51,8 +51,8 @@ def _each_team_tables(team_keys, categories, category_places, matchups, global_r
 
 
 def _analytics_tables(group_settings, matchup, scoreboards, global_resources):
-    leagues = group_settings['leagues'].split(',')
-    is_analytics_enabled = map(int, group_settings['is_analytics_enabled'].split(','))
+    leagues = group_settings['leagues']
+    is_analytics_enabled = group_settings.get('is_analytics_enabled', [])
     enabled_analytics_leagues = [league for is_enabled, league in zip(is_analytics_enabled, leagues) if is_enabled]
     sports = group_settings['sports']
 
@@ -138,13 +138,12 @@ def _matchup_table(league, group_settings, matchup, scoreboards, league_box_scor
 
 
 def _overall_stats(group_settings, matchup, scoreboards, box_scores):
-    leagues = group_settings['leagues'].split(',')
     sports = group_settings['sports']
     overall_plays = None if box_scores is None else {}
     overall_scores = []
     overall_stats_pairs = [[] for _ in range(matchup)]
     categories = None
-    for league in leagues:
+    for league in group_settings['leagues']:
         scores, _, category_pairs, _ = scoreboards[league]
         matchup_scores = scores[matchup - 1]
         overall_scores.extend(matchup_scores)
@@ -351,13 +350,12 @@ def _group_tables(group_settings, matchup, scoreboards, box_scores, global_resou
     titles = global_resources['titles']
     descriptions = global_resources['descriptions']
     is_each_category = group_settings['is_each_category']
-    leagues = group_settings['leagues'].split(',')
     sports = group_settings['sports']
     tiebreaker = group_settings['tiebreaker']
 
     matchups = np.arange(1, matchup + 1)
     group_tables = []
-    for league in leagues:
+    for league in group_settings['leagues']:
         league_box_scores = None if box_scores is None else box_scores[league]
         matchup_results_table = [
             titles['matchup'], descriptions['matchup'],
@@ -382,8 +380,7 @@ def calculate_tables(group_settings, schedule, matchup, scoreboards, box_scores,
     analytics_tables = _analytics_tables(group_settings, matchup, scoreboards_activated, global_resources)
 
     overall_tables = []
-    leagues = group_settings['leagues'].split(',')
-    if len(leagues) > 1:
+    if len(group_settings['leagues']) > 1:
         overall_stats = _overall_stats(group_settings, matchup, scoreboards_activated, box_scores)
         overall_tables = _overall_tables(group_settings, matchup, overall_stats, global_resources)
 

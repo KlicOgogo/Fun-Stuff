@@ -1,7 +1,6 @@
 from collections import defaultdict
 import datetime
 import os
-from pathlib import Path
 import pickle
 import re
 import sys
@@ -282,7 +281,7 @@ def _box_scores_online(league_id, sports, matchup, pairs, group_schedule, browse
 
     season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
     offline_box_scores_dir = os.path.join(_offline_data_dir, sports, league_id, season_str)
-    Path(offline_box_scores_dir).mkdir(parents=True, exist_ok=True)
+    os.makedirs(offline_box_scores_dir, exist_ok=True)
     offline_data_path = os.path.join(offline_box_scores_dir, f'box_scores_{matchup}.pkl')
     with open(offline_data_path, 'wb') as fp:
         pickle.dump(box_scores_stats, fp)
@@ -295,7 +294,7 @@ def group_box_scores(group_settings, group_schedule, matchup, browser, scoreboar
 
     sports = group_settings['sports']
     box_scores = defaultdict(list)
-    for league in group_settings['leagues'].split(','):
+    for league in group_settings['leagues']:
         pairs, team_names, _, league_name = scoreboards[league]
         for m in range(matchup):
             current_matchup = m + 1
@@ -375,7 +374,7 @@ def _schedule(league_id, sports, is_playoffs_support, is_offline, browser):
     season_start_year = today.year if today.month > 6 else today.year - 1
     season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
     offline_data_dir = os.path.join(_offline_data_dir, sports, league_id, season_str)
-    Path(offline_data_dir).mkdir(parents=True, exist_ok=True)
+    os.makedirs(offline_data_dir, exist_ok=True)
 
     offline_schedule_path = os.path.join(offline_data_dir, 'schedule.pkl')
     if os.path.isfile(offline_schedule_path) and is_offline:
@@ -408,7 +407,7 @@ def _schedule(league_id, sports, is_playoffs_support, is_offline, browser):
 def group_schedule(group_settings, browser, use_offline_schedule):
     schedule = None
     sports = group_settings['sports']
-    for league in group_settings['leagues'].split(','):
+    for league in group_settings['leagues']:
         current_schedule = _schedule(
             league, sports, group_settings['is_playoffs_support'], use_offline_schedule, browser)
         if schedule is None:
@@ -425,7 +424,7 @@ def scoreboards(league_id, sports, matchup, browser, online_matchups, is_categor
     season_start_year = today.year if today.month > 6 else today.year - 1
     season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
     offline_scoreboard_dir = os.path.join(_offline_data_dir, sports, league_id, season_str)
-    Path(offline_scoreboard_dir).mkdir(parents=True, exist_ok=True)
+    os.makedirs(offline_scoreboard_dir, exist_ok=True)
 
     soups = []
     espn_scoreboard_url = f'https://fantasy.espn.com/{sports}/league/scoreboard'

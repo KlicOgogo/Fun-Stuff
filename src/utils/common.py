@@ -2,7 +2,6 @@ from collections import defaultdict
 import datetime
 from operator import itemgetter
 import os
-from pathlib import Path
 import re
 
 from jinja2 import Template
@@ -143,25 +142,25 @@ def save_homepage(global_config, index_config, league_names):
     season_start_year = today.year if today.month > 6 else today.year - 1
     season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
 
-    for league_settings in index_config:
-        league_id = league_settings['leagues'].split(',')[0]
-        sports = league_settings['sports']
+    for group_settings in index_config:
+        main_league = group_settings['leagues'][0]
+        sports = group_settings['sports']
 
         for report_type in global_config['report_types']:
             github = global_config[report_type]['github']
             reports_repo_name = global_config[report_type]['repo_name']
             reports_dir_name = global_config[report_type]['dir_name']
 
-            season_relative_path = os.path.join(reports_repo_name, reports_dir_name, sports, league_id, season_str)
+            season_relative_path = os.path.join(reports_repo_name, reports_dir_name, sports, main_league, season_str)
             reports_dir = os.path.join(_repo_root_dir, '..', season_relative_path)
             if not os.path.isdir(reports_dir):
                 continue
             _, latest_report_link = _get_season_reports(season_relative_path, github)
 
-            league_name = league_names[sports][league_id]
+            main_league_name = league_names[sports][main_league]
             reports_type_name = report_type.capitalize()
             sports_display = _sports_to_display[sports]
-            sports_indexes[sports_display][league_name].append([reports_type_name, latest_report_link])
+            sports_indexes[sports_display][main_league_name].append([reports_type_name, latest_report_link])
 
     github = global_config['main_github']
     repo = global_config['main_repo']
@@ -206,14 +205,14 @@ def save_report_type_indexes(global_config, league_names):
         _save_html('type_index', template_params, type_index_path)
 
 
-def save_league_index(league_name, league_settings, global_config):
-    sports = league_settings['sports']
-    league_id = league_settings['leagues'].split(',')[0]
-    enable_analytics_flags = list(map(int, league_settings.get('is_analytics_enabled', '0').split(',')))
+def save_league_index(league_name, group_settings, global_config):
+    sports = group_settings['sports']
+    main_league_id = group_settings['leagues'][0]
+    enable_analytics_flags = group_settings.get('is_analytics_enabled', [0])
     report_types = ['results']
     if np.sum(enable_analytics_flags) != 0:
         report_types.append('analytics')
-    if league_settings['is_full_support']:
+    if group_settings['is_full_support']:
         report_types.append('active stats')
 
     main_github = global_config['main_github']
@@ -222,9 +221,9 @@ def save_league_index(league_name, league_settings, global_config):
     for index_key in report_types:
         index_repo_name = global_config[index_key]['repo_name']
         index_dir_name = global_config[index_key]['dir_name']
-        index_relative_path = os.path.join(index_repo_name, index_dir_name, sports, league_id)
+        index_relative_path = os.path.join(index_repo_name, index_dir_name, sports, main_league_id)
         home_page_dir = os.path.join(_repo_root_dir, '..', index_relative_path)
-        Path(home_page_dir).mkdir(parents=True, exist_ok=True)
+        os.makedirs(home_page_dir, exist_ok=True)
 
         indexes_by_year = []
         github = global_config[index_key]['github']
@@ -238,7 +237,7 @@ def save_league_index(league_name, league_settings, global_config):
             'title': f'Fantasy Fun Stuff ({index_key})',
             'index': main_index_url,
             'league_name': league_name,
-            'league_link': f'https://fantasy.espn.com/{sports}/league?leagueId={league_id}',
+            'league_link': f'https://fantasy.espn.com/{sports}/league?leagueId={main_league_id}',
             'sports': sports,
             'indexes_by_year': indexes_by_year,
             'google_analytics_key': global_config[index_key]['google_analytics_key']
@@ -260,7 +259,7 @@ def save_tables(group_settings, matchup, schedule, global_config, report_type, p
     repo_name = global_config[report_type]['repo_name']
     dir_name = global_config[report_type]['dir_name']
     sports = group_settings['sports']
-    main_league = group_settings['leagues'].split(',')[0]
+    main_league = group_settings['leagues'][0]
     season_reports_dir = os.path.join(repo_name, dir_name, sports, main_league, season_str)
     previous_reports = _get_previous_reports(season_reports_dir, matchup, schedule, github)
     template_params = {
@@ -272,6 +271,6 @@ def save_tables(group_settings, matchup, schedule, global_config, report_type, p
     }
     template_params.update(params)
     report_dir = os.path.join(_repo_root_dir, '..', season_reports_dir)
-    Path(report_dir).mkdir(parents=True, exist_ok=True)
+    os.makedirs(report_dir, exist_ok=True)
     matchup_path = os.path.join(report_dir, f'matchup_{matchup}.html')
     _save_html('matchup_report', template_params, matchup_path)

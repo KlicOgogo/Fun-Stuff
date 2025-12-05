@@ -1,63 +1,63 @@
 [
     {
         "sports": "basketball",
-        "leagues": "1529095",
+        "leagues": ["1529095"],
         "tiebreaker": "NO",
         "is_full_support": true,
         "is_playoffs_support": true
     },
     {
         "sports": "hockey",
-        "leagues": "8290",
+        "leagues": ["8290"],
         "tiebreaker": "NO",
         "is_full_support": true,
         "is_playoffs_support": true
     },
     {
         "sports": "hockey",
-        "leagues": "31769",
+        "leagues": ["31769"],
         "tiebreaker": "NO",
         "is_full_support": true,
         "is_playoffs_support": true
     },
     {
         "sports": "hockey",
-        "leagues": "33730",
+        "leagues": ["33730"],
         "tiebreaker": "NO",
         "is_full_support": true,
         "is_playoffs_support": true
     },
     {
         "sports": "hockey",
-        "leagues": "52338",
+        "leagues": ["52338"],
         "tiebreaker": "NO",
         "is_full_support": true,
         "is_playoffs_support": true
     },
     {
         "sports": "hockey",
-        "leagues": "57256",
+        "leagues": ["57256"],
         "tiebreaker": "NO",
         "is_full_support": true,
         "is_playoffs_support": true
     },
     {
         "sports": "hockey",
-        "leagues": "73362809",
+        "leagues": ["73362809"],
         "tiebreaker": "NO",
         "is_full_support": true,
         "is_playoffs_support": true
     },
     {
         "sports": "hockey",
-        "leagues": "1162726461",
+        "leagues": ["1162726461"],
         "tiebreaker": "NO",
         "is_full_support": true,
         "is_playoffs_support": true
     },
     {
         "sports": "hockey",
-        "leagues": "536076682",
+        "leagues": ["536076682"],
         "tiebreaker": "NO",
         "is_full_support": true,
         "is_playoffs_support": true

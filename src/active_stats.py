@@ -37,15 +37,13 @@ def _league_tables(sports, matchup, league_active_stats, descriptions):
     return tables
 
 
-def calculate_tables(league_settings, matchup, league_names, box_scores, descriptions):
+def calculate_tables(group_settings, matchup, league_names, box_scores, descriptions):
     if not box_scores:
         return {}
 
-    leagues = league_settings['leagues'].split(',')
-    sports = league_settings['sports']
-
+    sports = group_settings['sports']
     leagues_tables = []
-    for league_id in leagues:
+    for league_id in group_settings['leagues']:
         league_name = league_names[league_id]
         league_active_stats = box_scores[league_id]
         tables = _league_tables(sports, matchup, league_active_stats, descriptions)
