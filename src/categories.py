@@ -1,4 +1,5 @@
 from collections import defaultdict, Counter
+import itertools
 
 import numpy as np
 
@@ -49,7 +50,7 @@ def _each_team_tables(team_keys, categories, category_places, matchups, global_r
     return tables
 
 
-def _analytics_tables(group_settings, schedule, matchup, scoreboards, box_scores, global_resources):
+def _analytics_tables(group_settings, matchup, scoreboards, global_resources):
     leagues = group_settings['leagues'].split(',')
     is_analytics_enabled = map(int, group_settings['is_analytics_enabled'].split(','))
     enabled_analytics_leagues = [league for is_enabled, league in zip(is_analytics_enabled, leagues) if is_enabled]
@@ -63,10 +64,8 @@ def _analytics_tables(group_settings, schedule, matchup, scoreboards, box_scores
     matchups = np.arange(1, matchup + 1)
     for league in enabled_analytics_leagues:
         _, team_names, category_pairs, league_name = scoreboards[league]
-        gk_games_per_matchup = None if box_scores is None else \
-            [utils.data.goalkeeper_games(box_scores[league][m]) for m in range(matchup)]
         categories, category_places, category_win_stats = utils.categories.get_each_category_stats(
-            group_settings, schedule, matchup, category_pairs, gk_games_per_matchup, _less_win_categories)
+            matchup, category_pairs, _less_win_categories)
 
         tables = []
         tables.append([
@@ -101,30 +100,19 @@ def _analytics_tables(group_settings, schedule, matchup, scoreboards, box_scores
     return analytics_tables
 
 
-def _matchup_table(league, group_settings, schedule, matchup, scoreboards, box_scores):
+def _matchup_table(league, group_settings, matchup, scoreboards, league_box_scores):
     is_each_category = group_settings['is_each_category']
     sports = group_settings['sports']
     tiebreaker = group_settings['tiebreaker']
-    gk_threshold = group_settings['gk_threshold'] if 'gk_threshold' in group_settings else None
-    is_playoffs_double_gk_threshold = group_settings.get('is_playoffs_double_gk_threshold', False)
 
     scores, _, category_pairs, _ = scoreboards[league]
-    matchup_scores = scores[matchup - 1]
-
-    plays = None if box_scores is None else _plays_getters[sports](box_scores[league][matchup - 1])
-    plays_places = None if plays is None else utils.common.get_places(plays, reverse=True)
-    gk_games = None if box_scores is None else utils.data.goalkeeper_games(box_scores[league][matchup - 1])
-
-    actual_gk_threshold = gk_threshold
-    is_playoffs = schedule[matchup][-1]
-    if is_playoffs_double_gk_threshold and is_playoffs:
-        actual_gk_threshold = gk_threshold if gk_threshold is None else 2 * gk_threshold
     matchup_pairs, categories = category_pairs[matchup - 1]
-    matchup_pairs = utils.categories.apply_gk_rules(matchup_pairs, gk_games, actual_gk_threshold)
-
     stats = utils.categories.get_stats(matchup_pairs)
+
     places_data = utils.categories.get_places_data(stats, categories, _less_win_categories)
     places_sum = utils.categories.get_places_sum(matchup_pairs, categories, _less_win_categories)
+    plays = None if league_box_scores is None else _plays_getters[sports](league_box_scores[matchup - 1])
+    plays_places = None if plays is None else utils.common.get_places(plays, reverse=True)
     stats_with_plays = utils.categories.join_stats_and_plays(stats, plays)
     places_with_plays = utils.categories.join_stats_and_plays(places_data, plays_places)
     plays_columns = [] if plays is None else [_plays_cols[sports]]
@@ -140,7 +128,7 @@ def _matchup_table(league, group_settings, schedule, matchup, scoreboards, box_s
     expectations_column_name = 'ExpScore' if is_each_category else 'ER'
     comparisons = utils.categories.get_comparison_stats(stats, categories, _less_win_categories, tiebreaker)
     metrics = {
-        'Score': matchup_scores,
+        'Score': scores[matchup - 1],
         expectations_column_name: matchup_expectations,
         'TP': comparisons,
     }
@@ -162,7 +150,6 @@ def _overall_stats(group_settings, matchup, scoreboards, box_scores):
         overall_scores.extend(matchup_scores)
         for m in range(matchup):
             stats_pairs, categories = category_pairs[m]
-            # TODO: apply gk rules
             overall_stats_pairs[m].extend(stats_pairs)
         plays = None if box_scores is None else _plays_getters[sports](box_scores[league][matchup - 1])
         overall_plays = overall_plays if plays is None else overall_plays | plays
@@ -263,7 +250,7 @@ def _plays_tables(sports, matchups, league_box_scores, global_resources):
     return plays_tables
 
 
-def _cumulative_stats(matchup, scores, category_pairs, league_box_scores, gk_thresholds, tiebreaker):
+def _cumulative_stats(matchup, scores, category_pairs, tiebreaker):
     cumulative_stats = {
         'places': defaultdict(list),
         'opponent_places': defaultdict(list),
@@ -274,13 +261,9 @@ def _cumulative_stats(matchup, scores, category_pairs, league_box_scores, gk_thr
         'expected_win_record': defaultdict(list),
         'comparisons_h2h': defaultdict(lambda: defaultdict(Counter)),
     }
-    for m in range(matchup):
-        gk_games = None if league_box_scores is None else utils.data.goalkeeper_games(league_box_scores[m])
-        actual_gk_threshold = gk_thresholds[m]
-        stats_pairs, categories = category_pairs[m]
-        stats_pairs = utils.categories.apply_gk_rules(stats_pairs, gk_games, actual_gk_threshold)
+    for m in np.arange(1, matchup + 1):
+        stats_pairs, categories = category_pairs[m-1]
         opponent_dict = utils.common.get_opponent_dict(stats_pairs)
-
         matchup_places_sum = utils.categories.get_places_sum(stats_pairs, categories, _less_win_categories)
         matchup_places = utils.common.get_places(matchup_places_sum, False)
         for team in matchup_places:
@@ -297,26 +280,23 @@ def _cumulative_stats(matchup, scores, category_pairs, league_box_scores, gk_thr
 
         for team in opponent_dict:
             opponent = opponent_dict[team]
-            pair_result = utils.categories.get_pair_result(
+            team_result, _ = utils.categories.get_pair_result(
                 stats[team], stats[opponent], categories, _less_win_categories, tiebreaker)
-            cumulative_stats['win_record'][team][pair_result] += 1
+            cumulative_stats['win_record'][team][team_result] += 1
 
         expected_score = utils.categories.get_expected_score(stats, categories, _less_win_categories)
         tiebreaker_stats = utils.categories.get_tiebreaker_expectation(
             stats, categories, _less_win_categories, tiebreaker)
         expected_result = utils.categories.get_expected_result(expected_score, tiebreaker_stats, opponent_dict)
-
         for team in expected_score:
             cumulative_stats['expected_category_record'][team].append(expected_score[team])
             cumulative_stats['expected_win_record'][team].append(expected_result[team])
 
-        for team in stats:
-            for opponent in stats:
-                if team == opponent:
-                    continue
-                h2h_result = utils.categories.get_pair_result(
-                    stats[team], stats[opponent], categories, _less_win_categories, tiebreaker)
-                cumulative_stats['comparisons_h2h'][team][opponent][h2h_result] += 1
+        for team, opponent in itertools.combinations(stats.keys(), 2):
+            team_result, opponent_result = utils.categories.get_pair_result(
+                stats[team], stats[opponent], categories, _less_win_categories, tiebreaker)
+            cumulative_stats['comparisons_h2h'][team][opponent][team_result] += 1
+            cumulative_stats['comparisons_h2h'][opponent][team][opponent_result] += 1
 
     cumulative_stats['category_record'] = utils.categories.calculate_category_record(scores)
     return cumulative_stats
@@ -367,35 +347,24 @@ def _cumulative_tables(cumulative_stats, matchups, global_resources, is_each_cat
     return tables
 
 
-def _group_tables(group_settings, schedule, matchup, scoreboards, box_scores, global_resources):
+def _group_tables(group_settings, matchup, scoreboards, box_scores, global_resources):
     titles = global_resources['titles']
     descriptions = global_resources['descriptions']
     is_each_category = group_settings['is_each_category']
     leagues = group_settings['leagues'].split(',')
     sports = group_settings['sports']
     tiebreaker = group_settings['tiebreaker']
-    gk_threshold = group_settings['gk_threshold'] if 'gk_threshold' in group_settings else None
-    is_playoffs_double_gk_threshold = group_settings.get('is_playoffs_double_gk_threshold', False)
 
+    matchups = np.arange(1, matchup + 1)
     group_tables = []
     for league in leagues:
+        league_box_scores = None if box_scores is None else box_scores[league]
         matchup_results_table = [
             titles['matchup'], descriptions['matchup'],
-            _matchup_table(league, group_settings, schedule, matchup, scoreboards, box_scores)]
+            _matchup_table(league, group_settings, matchup, scoreboards, league_box_scores)]
 
-        matchup_gk_thresholds = []
-        matchups = np.arange(1, matchup + 1)
-        for current_matchup in matchups:
-            actual_gk_threshold = gk_threshold
-            is_playoffs = schedule[current_matchup][-1]
-            if is_playoffs_double_gk_threshold and is_playoffs:
-                actual_gk_threshold = gk_threshold if gk_threshold is None else 2 * gk_threshold
-            matchup_gk_thresholds.append(actual_gk_threshold)
-
-        league_box_scores = None if box_scores is None else box_scores[league]
         scores, _, category_pairs, league_name = scoreboards[league]
-        cumulative_stats = _cumulative_stats(
-            matchup, scores, category_pairs, league_box_scores, matchup_gk_thresholds, tiebreaker)
+        cumulative_stats = _cumulative_stats(matchup, scores, category_pairs, tiebreaker)
         cumulative_tables = _cumulative_tables(cumulative_stats, matchups, global_resources, is_each_category)
         plays_tables = _plays_tables(sports, matchups, league_box_scores, global_resources)
 
@@ -407,13 +376,15 @@ def _group_tables(group_settings, schedule, matchup, scoreboards, box_scores, gl
 
 
 def calculate_tables(group_settings, schedule, matchup, scoreboards, box_scores, global_resources):
-    group_tables = _group_tables(group_settings, schedule, matchup, scoreboards, box_scores, global_resources)
-    analytics_tables = _analytics_tables(group_settings, schedule, matchup, scoreboards, box_scores, global_resources)
+    scoreboards_activated = utils.categories.apply_activation_scoreboards(
+        scoreboards, box_scores, group_settings, schedule)
+    group_tables = _group_tables(group_settings, matchup, scoreboards_activated, box_scores, global_resources)
+    analytics_tables = _analytics_tables(group_settings, matchup, scoreboards_activated, global_resources)
 
     overall_tables = []
     leagues = group_settings['leagues'].split(',')
     if len(leagues) > 1:
-        overall_stats = _overall_stats(group_settings, matchup, scoreboards, box_scores)
+        overall_stats = _overall_stats(group_settings, matchup, scoreboards_activated, box_scores)
         overall_tables = _overall_tables(group_settings, matchup, overall_stats, global_resources)
 
     return {

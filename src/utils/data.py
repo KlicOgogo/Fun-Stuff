@@ -312,11 +312,11 @@ def group_box_scores(group_settings, group_schedule, matchup, browser, scoreboar
     return box_scores
 
 
-def goalkeeper_games(matchup_box_scores_data):
-    if not matchup_box_scores_data:
+def goalkeeper_games(matchup_box_scores):
+    if not matchup_box_scores:
         return None
     gk_games = {}
-    for team, (_, _, box_scores_totals) in matchup_box_scores_data.items():
+    for team, (_, _, box_scores_totals) in matchup_box_scores.items():
         gk_games[team] = int(box_scores_totals['GS']) if 'GS' in box_scores_totals else 0
     return gk_games if np.sum(list(gk_games.values())) != 0 else None
 

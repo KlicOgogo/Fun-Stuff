@@ -37,7 +37,7 @@ def _league_tables(sports, matchup, league_active_stats, descriptions):
     return tables
 
 
-def calculate_tables(league_settings, matchup, scoreboards, box_scores, descriptions):
+def calculate_tables(league_settings, matchup, league_names, box_scores, descriptions):
     if not box_scores:
         return {}
 
@@ -46,8 +46,7 @@ def calculate_tables(league_settings, matchup, scoreboards, box_scores, descript
 
     leagues_tables = []
     for league_id in leagues:
-        _, _, _, league_name = scoreboards[league_id]
-
+        league_name = league_names[league_id]
         league_active_stats = box_scores[league_id]
         tables = _league_tables(sports, matchup, league_active_stats, descriptions)
         link = f'https://fantasy.espn.com/{sports}/league?leagueId={league_id}'

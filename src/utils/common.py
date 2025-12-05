@@ -31,7 +31,7 @@ def load_global_resources():
 
 def find_proper_matchup(schedule):
     today = datetime.datetime.today().date()
-    # today = datetime.date(2025, 11, 24)
+    # today = datetime.date(2025, 12, 1)
     four_days_ago = today - datetime.timedelta(days=4)
     eleven_days_ago = four_days_ago - datetime.timedelta(days=7)
     for index, matchup_number in enumerate(sorted(schedule)):

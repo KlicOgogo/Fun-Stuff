@@ -3,6 +3,7 @@ from collections import Counter, defaultdict
 import numpy as np
 
 import utils.common
+import utils.data
 
 
 _gk_category_lowers = {'GAA': np.inf, 'SV%': -np.inf, 'GA': np.inf}
@@ -19,54 +20,22 @@ def _get_category_expectation(score_pairs, category, less_win_categories):
     return result
 
 
-def apply_gk_rules(matchup_pairs, gk_games, gk_threshold):
-    if gk_games is None:
-        return matchup_pairs
-
-    pairs_updated = []
-    for pair in matchup_pairs:
-        updated_pair = []
-        for team, player_stats in pair:
-            updated_player_stats = []
-            for cat, stat in player_stats:
-                if cat in _gk_category_lowers and team in gk_games and gk_games[team] < gk_threshold:
-                    updated_player_stats.append((cat, _gk_category_lowers[cat]))
-                else:
-                    updated_player_stats.append((cat, stat))
-            updated_pair.append((team, updated_player_stats))
-        pairs_updated.append(tuple(updated_pair))
-
-    return pairs_updated
-
-
-def get_each_category_stats(league_settings, schedule, matchup, category_pairs, gk_games, less_win_categories):
-    gk_threshold = league_settings['gk_threshold'] if 'gk_threshold' in league_settings else None
-    double_gk_threshold_key = 'is_playoffs_double_gk_threshold'
-    is_playoffs_double_gk_threshold = league_settings[double_gk_threshold_key] \
-        if double_gk_threshold_key in league_settings else False
-
+def get_each_category_stats(matchup, category_pairs, less_win_categories):
     category_places = defaultdict(lambda: defaultdict(list))
     category_win_stats = defaultdict(lambda: defaultdict(list))
     for m in range(matchup):
-        current_matchup = m + 1
-        matchup_gk_games = None if gk_games is None else gk_games[m]
-        actual_gk_threshold = gk_threshold
-        is_playoffs = schedule[current_matchup][-1]
-        if is_playoffs_double_gk_threshold and is_playoffs:
-            actual_gk_threshold = gk_threshold if gk_threshold is None else 2 * gk_threshold
         matchup_pairs, categories = category_pairs[m]
-        matchup_pairs = apply_gk_rules(matchup_pairs, matchup_gk_games, actual_gk_threshold)
-
-        opp_dict = utils.common.get_opponent_dict(matchup_pairs)
+        opponent_dict = utils.common.get_opponent_dict(matchup_pairs)
         stats = get_stats(matchup_pairs)
         places_data = get_places_data(stats, categories, less_win_categories)
         for team in places_data:
-            for cat, place, opp_place in zip(categories, places_data[team], places_data[opp_dict[team]]):
+            for cat, place, opponent_place in zip(categories, places_data[team], places_data[opponent_dict[team]]):
                 category_places[cat][team].append(place)
-                win_stat = (np.sign(opp_place - place) + 1) / 2 # 1 for win, 0.5 for draw, 0 for lose
+                win_stat = (np.sign(opponent_place - place) + 1) / 2 # 1 for win, 0.5 for draw, 0 for lose
                 category_win_stats[cat][team].append(win_stat)
 
     return categories, category_places, category_win_stats
+
 
 def get_comparison_stats(stats, categories, less_win_categories, tiebreaker):
     comparison_stats = {}
@@ -74,7 +43,7 @@ def get_comparison_stats(stats, categories, less_win_categories, tiebreaker):
         win_stat = Counter()
         for opp in stats:
             if opp != team:
-                fake_result = get_pair_result(stats[team], stats[opp], categories, less_win_categories, tiebreaker)
+                fake_result, _ = get_pair_result(stats[team], stats[opp], categories, less_win_categories, tiebreaker)
                 win_stat[fake_result] += 1
         comparison_stats[team] = [win_stat['W'], win_stat['L'], win_stat['D']]
     return comparison_stats
@@ -117,19 +86,20 @@ def get_expected_result(expected_score, tiebreaker_stats, opponents_dict):
     return expected_result
 
 
-def get_pair_result(team_stat, opp_stat, categories, less_win_categories, tiebreaker):
+def get_pair_result(team_stats, opponent_stats, categories, less_win_categories, tiebreaker):
     win_count = 0
     lose_count = 0
     for index, cat in enumerate(categories):
         cat_value_coeff = 1.0 if cat != tiebreaker else 1.01
-        if team_stat[index] > opp_stat[index]:
+        if team_stats[index] > opponent_stats[index]:
             lose_count += (cat in less_win_categories) * cat_value_coeff
             win_count += (cat not in less_win_categories) * cat_value_coeff
-        elif team_stat[index] < opp_stat[index]:
+        elif team_stats[index] < opponent_stats[index]:
             lose_count += (cat not in less_win_categories) * cat_value_coeff
             win_count += (cat in less_win_categories)  * cat_value_coeff
-    result = 'D' if win_count == lose_count else 'W' if win_count > lose_count else 'L'
-    return result
+    team_result = 'D' if win_count == lose_count else 'W' if win_count > lose_count else 'L'
+    opponent_result = 'D' if win_count == lose_count else 'L' if win_count > lose_count else 'W'
+    return team_result, opponent_result
 
 
 def get_places_data(stats, categories, less_win_categories):
@@ -174,3 +144,70 @@ def calculate_category_record(scores):
                     category_record[team_key] = np.array(list(map(float, team_score.split('-'))))
 
     return category_record
+
+
+def _apply_activation_pairs(matchup_pairs, matchup, settings, stats):
+    if settings is None or stats is None:
+        return matchup_pairs
+
+    gk_threshold = settings['goalkeeper_games'][matchup]
+    gk_games = stats['goalkeeper_games'][matchup]
+
+    pairs_updated = []
+    for pair in matchup_pairs:
+        updated_pair = []
+        for team, player_stats in pair:
+            updated_player_stats = []
+            for cat, stat in player_stats:
+                if cat in _gk_category_lowers and gk_games and team in gk_games and gk_games[team] < gk_threshold:
+                    updated_player_stats.append((cat, _gk_category_lowers[cat]))
+                else:
+                    updated_player_stats.append((cat, stat))
+            updated_pair.append((team, updated_player_stats))
+        pairs_updated.append(tuple(updated_pair))
+
+    return pairs_updated
+
+
+def _activation_settings(group_settings, matchups, schedule):
+    if 'gk_threshold' not in group_settings:
+        return None
+
+    gk_threshold = group_settings['gk_threshold']
+    is_playoffs_double_gk_games = group_settings.get('is_playoffs_double_gk_games', False)
+
+    if is_playoffs_double_gk_games:
+        gk_games_thresholds = {m: 2 * gk_threshold if schedule[m][-1] else gk_threshold for m in matchups}
+    else:
+        gk_games_thresholds = {m: gk_threshold for m in matchups}
+    return {'goalkeeper_games': gk_games_thresholds}
+
+
+def _activation_stats(league_box_scores, matchups):
+    if league_box_scores is None:
+        return None
+
+    return {
+        'goalkeeper_games': {m: utils.data.goalkeeper_games(league_box_scores[m-1]) for m in matchups}
+    }
+
+
+def apply_activation_scoreboards(scoreboards, box_scores, group_settings, schedule):
+    scoreboards_activated = {}
+    for league, league_scoreboards in scoreboards.items():
+        scores, team_names, category_pairs, league_name = league_scoreboards
+        matchup = len(category_pairs)
+
+        matchups = np.arange(1, matchup + 1)
+        league_box_scores = None if box_scores is None else box_scores[league]
+        settings = _activation_settings(group_settings, matchups, schedule)
+        stats = _activation_stats(league_box_scores, matchups)
+
+        category_pairs_activated = []
+        for m, (pairs, categories) in enumerate(category_pairs):
+            pairs_activated = _apply_activation_pairs(pairs, m + 1, settings, stats)
+            category_pairs_activated.append((pairs_activated, categories))
+
+        scoreboards_activated[league] = scores, team_names, category_pairs_activated, league_name
+
+    return scoreboards_activated

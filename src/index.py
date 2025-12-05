@@ -43,7 +43,7 @@ def _process_group(group_settings, schedule, scoring_type, browser, global_resou
         tables = tables_calculator(group_settings, schedule, matchup, scoreboards, box_scores, global_resources)
 
         active_stats_tables = active_stats.calculate_tables(
-            group_settings, matchup, scoreboards, box_scores, global_resources['descriptions'])
+            group_settings, matchup, league_names, box_scores, global_resources['descriptions'])
         tables.update(active_stats_tables)
 
         for report_type, type_tables in tables.items():
