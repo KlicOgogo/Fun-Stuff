@@ -1,4 +1,5 @@
 from collections import Counter, defaultdict
+import itertools
 
 import numpy as np
 
@@ -38,14 +39,16 @@ def get_each_category_stats(matchup, category_pairs, less_win_categories):
 
 
 def get_comparison_stats(stats, categories, less_win_categories, tiebreaker):
+    team_win_stats = defaultdict(Counter)
+    for team, opponent in itertools.combinations(stats.keys(), 2):
+        team_result, opponent_result = get_pair_result(
+            stats[team], stats[opponent], categories, less_win_categories, tiebreaker)
+        team_win_stats[team][team_result] += 1
+        team_win_stats[opponent][opponent_result] += 1
+
     comparison_stats = {}
-    for team in stats:
-        win_stat = Counter()
-        for opp in stats:
-            if opp != team:
-                fake_result, _ = get_pair_result(stats[team], stats[opp], categories, less_win_categories, tiebreaker)
-                win_stat[fake_result] += 1
-        comparison_stats[team] = [win_stat['W'], win_stat['L'], win_stat['D']]
+    for team, win_stats in team_win_stats.items():
+        comparison_stats[team] = [win_stats['W'], win_stats['L'], win_stats['D']]
     return comparison_stats
 
 
