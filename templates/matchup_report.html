@@ -140,7 +140,7 @@
         <h2><a href="{{ league_link }}" style="text-decoration:none;">{{ league_name }}</a></h2>
     {%- for caption, description, table in tables %}
         &nbsp;
-        <button class="collapsible"><h3 title="{{ description }}">{{ caption }}</h3></button>
+        <button class="collapsible"><h3>{{ caption }}</h3></button>
         <div class="content">
         <div class="text-box">
             {{ description }}
@@ -155,7 +155,7 @@
     {%- endif %}
     {%- for caption, description, table in overall_tables %}
         &nbsp;
-        <button class="collapsible"><h3 title="{{ description }}">{{ caption }}</h3></button>
+        <button class="collapsible"><h3>{{ caption }}</h3></button>
         <div class="content">
         <div class="text-box">
             {{ description }}
