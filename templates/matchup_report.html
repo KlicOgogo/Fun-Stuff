@@ -55,7 +55,11 @@
         }
         /* Preserve header background */
         table[data-sticky] th {
+            border-left: 1px solid black;
+            border-right: 1px solid black;
+            border-bottom: 1px solid black;
             background: #FFFFFF;
+            padding-left: 6px;
         }
 
         .collapsible {
@@ -81,6 +85,19 @@
             overflow-x: auto;
             transition: max-height 0.2s linear;
             background-color: white;
+            width: 100%;                /* default: fit parent */
+            max-width: none;            /* allow child table to overflow */
+        }
+        .content.expanded {
+            -webkit-overflow-scrolling: touch;
+            padding: 0 18px;
+            max-height: none;
+            overflow-y: visible;
+            overflow-x: auto;
+            transition: max-height 0.2s linear;
+            background-color: white;
+            width: 100%;                /* default: fit parent */
+            max-width: none;
         }
 
         body {
@@ -143,11 +160,7 @@
               coll[i].addEventListener("click", function() {
                 this.classList.toggle("active");
                 var content = this.nextElementSibling;
-                if (content.style.maxHeight) {
-                  content.style.maxHeight = null;
-                } else {
-                  content.style.maxHeight = (content.scrollHeight + 100000) + "px";
-                }
+                content.classList.toggle("expanded");
               });
             }
         </script>
