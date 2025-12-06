@@ -1,25 +1,36 @@
 <!DOCTYPE html>
 <html>
-	<style>
-		a:link {
-			color: black;
-			background-color: transparent;
-			text-decoration: none;
-		}
-		
-		a:hover {
-			color: red;
-			background-color: transparent;
-			text-decoration: none;
-		}
-		
-		a:active {
-			color: red;
-			background-color: transparent;
-			text-decoration: underline;
-		}
+    <style>
+        a:link {
+            color: black;
+            background-color: transparent;
+            text-decoration: none;
+        }
 
-		.collapsible {
+        a:hover {
+            color: red;
+            background-color: transparent;
+            text-decoration: none;
+        }
+
+        a:active {
+            color: red;
+            background-color: transparent;
+            text-decoration: underline;
+        }
+
+        table[data-sticky] tr:nth-child(odd) td {
+            background: #F0F0F0; /* odd row color */
+        }
+        table[data-sticky] tr:nth-child(even) td {
+            background: #FFFFFF; /* even row color */
+        }
+        /* Preserve header background */
+        table[data-sticky] th {
+            background: #FFFFFF;
+        }
+
+        .collapsible {
             background-color: #f1f1f1;
             color: black;
             cursor: pointer;
@@ -42,16 +53,16 @@
             background-color: white;
         }
 
-		body {
-			overflow-y:scroll;
-		}
-	</style>
+        body {
+            overflow-y:scroll;
+        }
+    </style>
 
-	<head>
-		<link rel="icon" type="image/png" href="https://klicogogo.github.io/res/favicon.ico"/>
-	</head>
-	<!-- Google tag (gtag.js) -->
-	<script async src="https://www.googletagmanager.com/gtag/js?id={{ google_analytics_key }}"></script>
+    <head>
+        <link rel="icon" type="image/png" href="https://klicogogo.github.io/res/favicon.ico"/>
+    </head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ google_analytics_key }}"></script>
     <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
@@ -60,43 +71,43 @@
     gtag('config', '{{ google_analytics_key }}');
     </script>
 
-	<body align="center">
-		<title>{{ title }}</title>
-		<h1><a href="{{ index }}" style="text-decoration:none;">{{ header }}</a></h1>
+    <body align="center">
+        <title>{{ title }}</title>
+        <h1><a href="{{ index }}" style="text-decoration:none;">{{ header }}</a></h1>
 {% for league_name, league_link, tables in leagues %}
-		<h2><a href="{{ league_link }}" style="text-decoration:none;">{{ league_name }}</a></h2>
-	{%- for caption, description, table in tables %}
-		&nbsp;
-		<button class="collapsible"><h3 title="{{ description }}">{{ caption }}</h3></button>
-		<div class="content" style="overflow-x:auto;">
-		{{ table }}
-		</div>
-	{%- endfor %}
+        <h2><a href="{{ league_link }}" style="text-decoration:none;">{{ league_name }}</a></h2>
+    {%- for caption, description, table in tables %}
+        &nbsp;
+        <button class="collapsible"><h3 title="{{ description }}">{{ caption }}</h3></button>
+        <div class="content" style="overflow-x:auto;">
+        {{ table }}
+        </div>
+    {%- endfor %}
 {%- endfor %}
 
-	{%- if overall_tables|length > 0 %}
-		<h2>Summary</h2>
-	{%- endif %}
-	{%- for caption, description, table in overall_tables %}
-		&nbsp;
-		<button class="collapsible"><h3 title="{{ description }}">{{ caption }}</h3></button>
-		<div class="content" style="overflow-x:auto;">
-		{{ table }}
-		</div>
-	{%- endfor %}
-		{%- if previous_reports|length > 0 %}
-		<h2 class="list-heading">Previous reports</h2>
-		<ul style="list-style-type:none;">
-		{%- for matchup_number, link_data in previous_reports|dictsort(reverse=true) %}
-			<li><a href="{{ link_data[1] }}" style="text-decoration:none;">{{ link_data[0] }}</a></li>
-		{%- endfor %}
-		</ul>
-		{%- endif %}
-	
-		<script>
+    {%- if overall_tables|length > 0 %}
+        <h2>Summary</h2>
+    {%- endif %}
+    {%- for caption, description, table in overall_tables %}
+        &nbsp;
+        <button class="collapsible"><h3 title="{{ description }}">{{ caption }}</h3></button>
+        <div class="content" style="overflow-x:auto;">
+        {{ table }}
+        </div>
+    {%- endfor %}
+        {%- if previous_reports|length > 0 %}
+        <h2 class="list-heading">Previous reports</h2>
+        <ul style="list-style-type:none;">
+        {%- for matchup_number, link_data in previous_reports|dictsort(reverse=true) %}
+            <li><a href="{{ link_data[1] }}" style="text-decoration:none;">{{ link_data[0] }}</a></li>
+        {%- endfor %}
+        </ul>
+        {%- endif %}
+
+        <script>
             var coll = document.getElementsByClassName("collapsible");
             var i;
-            
+
             for (i = 0; i < coll.length; i++) {
               coll[i].addEventListener("click", function() {
                 this.classList.toggle("active");
@@ -109,6 +120,37 @@
               });
             }
         </script>
-		<script src="https://klicogogo.github.io/res/sorttable.js"></script>
-	</body>
+        <script src="https://klicogogo.github.io/res/sorttable.js"></script>
+        <script>
+            function makeStickyTables() {
+                const tables = document.querySelectorAll('table[data-sticky]');
+
+                tables.forEach(table => {
+                    const numSticky = parseInt(table.getAttribute('data-sticky'), 0);
+                    const rows = table.rows;
+                    const offsets = [];
+
+                    // Calculate cumulative widths
+                    for (let col = 0; col < numSticky; col++) {
+                        let width = rows[0].cells[col].offsetWidth;
+                        offsets[col] = (offsets[col - 1] || 0) + width;
+                    }
+
+                    // Apply sticky + left offsets
+                    for (let row of rows) {
+                        for (let col = 0; col < numSticky; col++) {
+                            let cell = row.cells[col];
+                            cell.style.position = "sticky";
+                            cell.style.left = (offsets[col - 1] || 0) + "px";
+                            cell.style.zIndex = 2;
+                            cell.style.backgroundColor = window.getComputedStyle(cell).backgroundColor;
+                        }
+                    }
+                });
+            }
+
+            window.addEventListener("DOMContentLoaded", makeStickyTables);
+            window.addEventListener("resize", makeStickyTables);
+        </script>
+    </body>
 </html>

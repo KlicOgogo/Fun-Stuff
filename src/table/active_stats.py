@@ -72,6 +72,7 @@ def matchup(players_stats, categories_data):
     sort_indexes = np.lexsort([df[col] * -1.0 for col in sort_cols])
     df = df.iloc[sort_indexes]
     df = add_position_column(df)
+    table_attrs = style.calculate_table_attributes(isSortable=True, hasPositionColumn=True)
     styler = df.style.format('{:g}', subset=list(set(category_columns) - {'ATOI', ' ', '  '})).\
-        set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide()
+        set_table_styles(style.STYLES).set_table_attributes(table_attrs).hide()
     return styler.to_html()

@@ -17,6 +17,16 @@ STYLES = [
 ]
 
 
+def calculate_table_attributes(isSortable, hasPositionColumn):
+    attributes = 'style="border-collapse: collapse; border: 1px solid black;" align="center"; '
+    if isSortable:
+        attributes += 'class="sortable"; '
+
+    sticky_column_count = 2 if hasPositionColumn else 1
+    attributes += f'data-sticky="{sticky_column_count}"; '
+    return attributes
+
+
 def _by_ranges(s, ranges, colors):
     result = []
     for v in s:
