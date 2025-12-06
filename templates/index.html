@@ -1,18 +1,28 @@
 <!DOCTYPE html>
 <html>
 	<style>
+        .text-box {
+            width: 30%;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            padding: 16px;
+            margin: 20px auto;
+            word-wrap: break-word;
+            box-sizing: border-box;
+        }
+
 		a.class1:link {
             color: black;
             background-color: transparent;
             text-decoration: none;
         }
-        
+
         a.class1:hover {
             color: blue;
             background-color: transparent;
             text-decoration: none;
         }
-        
+
         a.class1:visited {
             color: purple;
             background-color: transparent;
@@ -30,13 +40,13 @@
 			background-color: transparent;
 			text-decoration: none;
 		}
-		
+
 		a.text:hover {
 			color: red;
 			background-color: transparent;
 			text-decoration: none;
 		}
-		
+
 		a.text:visited {
 			color: purple;
 			background-color: transparent;
@@ -58,6 +68,8 @@
             border: none;
             text-align: center;
             outline: none;
+            border-radius: 10px;
+            margin-bottom: 10px;
         }
 		.collapsible.active, .collapsible:hover {
             background-color: #dcdcdc;
@@ -73,6 +85,8 @@
             border: none;
             text-align: center;
             outline: none;
+            border-radius: 10px;
+            display: block;
         }
 		.league_page.active, .league_page:hover {
             background-color: #b4b4b4;
@@ -82,16 +96,53 @@
             padding: 0 18px;
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.2s ease-out;
+            transition: max-height 0.3s ease-out;
             background-color: white;
+            border-radius: 10px;
+            display: flex;
+    		flex-direction: column;
+			align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .content .league_page {
+            margin: 0px;
+        }
+
+        .content.expanded {
+            -webkit-overflow-scrolling: touch;
+            padding: 0 18px;
+            max-height: none;
+            overflow-y: visible;
+            overflow-x: auto;
+            transition: max-height 0.3s ease-in;
+            background-color: white;
+            width: 100%;
+            max-width: none;
+            display: flex;
+    		flex-direction: column;
+			align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .content,
+        .content.expanded {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
         }
 
 		body {
-			overflow-y:scroll;
+			overflow-y: scroll;
+            overflow-x: hidden;
 		}
 	</style>
-	
+
 	<head>
+        <meta charset="UTF-8">
         <link rel="icon" type="image/png" href="https://klicogogo.github.io/res/favicon.ico"/>
     </head>
     <!-- Google tag (gtag.js) -->
@@ -118,32 +169,30 @@
 			</div>
 			{%- endfor %}
 		{%- endfor %}
-		
+
 		{%- if archive_url != None %}
 			<h1><a href="{{ archive_url }}" class="text">Archive</a></h1>
 		{%- endif %}
 
 		<h1 style="margin:0">About</h1>
-		<p>A tool to visualize various stats based on fantasy results. <br>
-			<b>Author</b>: <a href="https://t.me/klicunou" class="text">Andrei Klitsunou</a>. <br> 
-			<b>Credits</b>: Alexander Nikolaev and Sergei Novgorodcev. <br>
-			<b>Support</b>: <a href="https://yoomoney.ru/to/4100116057812582" class="text">YooMoney</a>. <br>
+
+        <div class="text-box">
+		    A tool to visualize various stats based on fantasy results. <br>
+            <b>Author</b>: <a href="https://t.me/klicunou" class="text">Andrei Klitsunou</a>. <br>
+            <b>Credits</b>: Alexander Nikolaev and Sergei Novgorodcev. <br>
+            <b>Support</b>: <a href="https://yoomoney.ru/to/4100116057812582" class="text">YooMoney</a>. <br>
 			<b>Subscribe to updates</b>: <a href="https://t.me/fun_stuff_updates" class="text">Telegram</a>.
-		</p>
+		</div>
 
 		<script>
             var coll = document.getElementsByClassName("collapsible");
             var i;
-            
+
             for (i = 0; i < coll.length; i++) {
               coll[i].addEventListener("click", function() {
                 this.classList.toggle("active");
                 var content = this.nextElementSibling;
-                if (content.style.maxHeight) {
-                  content.style.maxHeight = null;
-                } else {
-                  content.style.maxHeight = (content.scrollHeight + 100000) + "px";
-                }
+                content.classList.toggle("expanded");
               });
             }
         </script>
