@@ -46,6 +46,7 @@
         }
 
         .content {
+            -webkit-overflow-scrolling: touch;
             padding: 0 18px;
             max-height: 0;
             overflow: hidden;
@@ -143,7 +144,6 @@
                             cell.style.position = "sticky";
                             cell.style.left = (offsets[col - 1] || 0) + "px";
                             cell.style.zIndex = 2;
-                            cell.style.backgroundColor = window.getComputedStyle(cell).backgroundColor;
                         }
                     }
                 });
@@ -151,6 +151,7 @@
 
             window.addEventListener("DOMContentLoaded", makeStickyTables);
             window.addEventListener("resize", makeStickyTables);
+            window.addEventListener("orientationchange", makeStickyTables);
         </script>
     </body>
 </html>

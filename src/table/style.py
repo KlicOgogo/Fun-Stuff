@@ -10,10 +10,10 @@ STYLES = [
                                ('text-align', 'right'), ('padding-left', '4px'), ('padding-right', '4px')]),
     dict(selector='td:first-child', props=[('border-left', 'none')]),
     dict(selector='td:last-child', props=[('border-right', 'none')]),
+    dict(selector='tbody  tr:nth-child(odd)', props=[('background', '#F0F0F0')]),
     dict(selector='th', props=[('border-left', '1px solid black'), ('border-right', '1px solid black'),
                                ('border-bottom', '1px solid black'), ('background', '#FFFFFF'),
                                ('padding-left', '6px')]),
-    dict(selector='tr:nth-child(odd)', props=[('background', '#F0F0F0')]),
 ]
 
 
