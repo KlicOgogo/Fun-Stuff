@@ -23,6 +23,29 @@
             border-collapse: collapse;
             border: 1px solid black;
         }
+        td {
+            border-left: 1px solid black;
+            border-right: 1px solid black;
+            text-align: right;
+            padding-left: 4px;
+            padding-right: 4px;
+        }
+        td:first-child {
+            border-left: none;
+        }
+        td:last-child {
+            border-right: none;
+        }
+        tbody tr:nth-child(odd) {
+            background: #F0F0F0;
+        }
+        th {
+            border-left: 1px solid black;
+            border-right: 1px solid black;
+            border-bottom: 1px solid black;
+            background: #FFFFFF;
+            padding-left: 6px;
+        }
 
         table[data-sticky] tr:nth-child(odd) td {
             background: #F0F0F0; /* odd row color */

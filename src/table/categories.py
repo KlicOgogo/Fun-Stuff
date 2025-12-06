@@ -106,7 +106,7 @@ def pairwise_comparisons(comparisons_data, matchups, is_opponent, n_last, less_w
     df = add_position_column(df)
     best, worst = _get_extremums(df, less_win_categories, is_opponent, n_last)
     styler = df.style.format('{:g}', subset=pd.IndexSlice[list(df_data.keys()), perc_cols]).\
-        set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
+        set_table_attributes(style.ATTRS_SORTABLE).hide().\
         apply(lambda s: style.extremum(s, best[s.name], worst[s.name]), subset=matchups).\
         map(style.percentage, subset=pd.IndexSlice[list(df_data.keys()), perc_cols])
     return styler.to_html()
@@ -132,7 +132,7 @@ def expected_category_stats(data, expected_data, matchups, less_win_categories):
     best, worst = _get_extremums(df, less_win_categories, is_opponent=False)
     extremum_lambda = lambda s: style.extremum(s, best[s.name], worst[s.name])
     styler = df.style.format('{:g}', subset=pd.IndexSlice[list(df_data.keys()), ['DD  ', 'WD', 'LD', 'Diff']]).\
-        set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
+        set_table_attributes(style.ATTRS_SORTABLE).hide().\
         map(style.value, subset=pd.IndexSlice[list(df_data.keys()), ['Diff']]).\
         apply(extremum_lambda, subset=pd.IndexSlice[df.index, [*matchups, 'Total', 'Real']])
     return styler.to_html()
@@ -157,7 +157,7 @@ def expected_win_stats(data, expected_data, matchups):
     df = df.iloc[np.lexsort((-df['WD'], -df['Diff']))]
     df = add_position_column(df)
     styler = df.style.format('{:g}', subset=pd.IndexSlice[list(df_data.keys()), ['Diff']]).\
-        set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
+        set_table_attributes(style.ATTRS_SORTABLE).hide().\
         map(style.pair_result, subset=matchups).\
         map(style.value, subset=pd.IndexSlice[list(df_data.keys()), ['Diff']])
     return styler.to_html()
@@ -192,7 +192,7 @@ def matchup(stats_with_plays, places_with_plays, places_sum, categories_with_pla
     num_cols = list(set(df.columns) - {'Team', 'League', 'Score', 'ER', 'ExpScore', 'ATOI'})
     extremum_lambda = lambda s: style.extremum(s, best[s.name], worst[s.name])
     styler = df.style.format('{:g}', subset=pd.IndexSlice[df.index, num_cols]).\
-        set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
+        set_table_attributes(style.ATTRS_SORTABLE).hide().\
         apply(extremum_lambda, subset=pd.IndexSlice[df.index, extremum_cols]).\
         apply(style.place, subset=pd.IndexSlice[df_stats.index, places_cols]).\
         map(style.percentage, subset=pd.IndexSlice[df_stats.index, ['TP']])

@@ -31,7 +31,7 @@ def luck_score(luck, matchups, opp_flag, n_last):
     df = df.iloc[sort_indexes]
     df = add_position_column(df)
     styler = df.style.format({c: '{:g}' for c in set(cols) - {'Team'}}).\
-        set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
+        set_table_attributes(style.ATTRS_SORTABLE).hide().\
         map(style.opponent_luck_score if opp_flag else style.value, subset=matchups)
     return styler.to_html()
 
@@ -43,5 +43,5 @@ def top(data, n_top, cols, drop_league_col_flag):
     if drop_league_col_flag:
         df.drop('League', axis=1, inplace=True)
     styler = df.style.format({c: '{:g}' for c in set(cols) - {'Team', 'League'}}).\
-        set_table_styles(style.STYLES).set_table_attributes(style.ATTRS).hide()
+        set_table_attributes(style.ATTRS).hide()
     return styler.to_html()

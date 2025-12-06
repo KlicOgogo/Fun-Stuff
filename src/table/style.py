@@ -3,18 +3,8 @@ import numpy as np
 from table import flag
 
 
-ATTRS = 'style="border-collapse: collapse; border: 1px solid black;" align= "center"'
-ATTRS_SORTABLE = 'style="border-collapse: collapse; border: 1px solid black;" align="center"; class="sortable"'
-STYLES = [
-    dict(selector='td', props=[('border-left', '1px solid black'), ('border-right', '1px solid black'),
-                               ('text-align', 'right'), ('padding-left', '4px'), ('padding-right', '4px')]),
-    dict(selector='td:first-child', props=[('border-left', 'none')]),
-    dict(selector='td:last-child', props=[('border-right', 'none')]),
-    dict(selector='tbody  tr:nth-child(odd)', props=[('background', '#F0F0F0')]),
-    dict(selector='th', props=[('border-left', '1px solid black'), ('border-right', '1px solid black'),
-                               ('border-bottom', '1px solid black'), ('background', '#FFFFFF'),
-                               ('padding-left', '6px')]),
-]
+ATTRS = 'align= "center"'
+ATTRS_SORTABLE = 'align="center"; class="sortable"'
 
 
 def calculate_table_attributes(isSortable, hasPositionColumn):

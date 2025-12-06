@@ -29,7 +29,7 @@ def category_power(places_by_categories, categories, n_last=None):
     df = df.iloc[np.lexsort((-df['&#128532;'], -df['&#128556;'], -df['&#128527;'], -df['&#128526;']))]
     df = common.add_position_column(df)
     styler = df.style.format('{:g}', subset=categories).\
-        set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
+        set_table_attributes(style.ATTRS_SORTABLE).hide().\
         apply(style.category_power, subset=categories)
     return styler.to_html()
 
@@ -50,7 +50,7 @@ def category_rankings(places_by_categories, categories):
     df = pd.DataFrame(list(df_data.values()), index=df_data.keys(), columns=np.arange(1, len(categories) + 1))
     df = df_teams.merge(df, how='outer', left_index=True, right_index=True)
     df = df.iloc[np.lexsort((df['Team'],))]
-    styler = df.style.set_table_styles(style.STYLES).set_table_attributes(style.ATTRS).hide()
+    styler = df.style.set_table_attributes(style.ATTRS).hide()
     return styler.to_html()
 
 
@@ -96,7 +96,7 @@ def h2h_category_record(places_by_categories, categories, my_team_key, n_last):
     df = df.iloc[np.lexsort((-df['W  '], -df[f'L{n_last}%'], -df['%']))]
     df = common.add_position_column(df)
     styler = df.style.format('{:g}', subset=percentage_cols).\
-        set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
+        set_table_attributes(style.ATTRS_SORTABLE).hide().\
         map(style.percentage, subset=percentage_cols)
     return styler.to_html()
 
@@ -134,7 +134,7 @@ def power_predictions(places_by_categories, my_team_key, matchups):
     df = df_teams.merge(df_stats, how='outer', left_index=True, right_index=True)
     df = df.iloc[np.lexsort((-df['W  '], -df['%']))]
     df = common.add_position_column(df)
-    styler = df.style.format({'%': '{:g}'}).set_table_styles(style.STYLES).set_table_attributes(style.ATTRS).hide().\
+    styler = df.style.format({'%': '{:g}'}).set_table_attributes(style.ATTRS).hide().\
         map(style.percentage, subset=['%'])
     return styler.to_html()
 
@@ -179,6 +179,6 @@ def category_win_stats(win_stats, categories, n_last=None):
     df = df.iloc[np.lexsort((-df['&#128532;'], -df['&#128556;'], -df['&#128527;'], -df['&#128526;']))]
     df = common.add_position_column(df)
     styler = df.style.format('{:g}', subset=categories).\
-        set_table_styles(style.STYLES).set_table_attributes(style.ATTRS_SORTABLE).hide().\
+        set_table_attributes(style.ATTRS_SORTABLE).hide().\
         apply(style.each_category_win_stat, subset=categories)
     return styler.to_html()
