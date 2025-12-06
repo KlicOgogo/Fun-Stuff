@@ -19,6 +19,11 @@
             text-decoration: underline;
         }
 
+        table {
+            border-collapse: collapse;
+            border: 1px solid black;
+        }
+
         table[data-sticky] tr:nth-child(odd) td {
             background: #F0F0F0; /* odd row color */
         }
@@ -49,13 +54,15 @@
             -webkit-overflow-scrolling: touch;
             padding: 0 18px;
             max-height: 0;
-            overflow: hidden;
+            overflow-y: hidden;
+            overflow-x: auto;
             transition: max-height 0.2s linear;
             background-color: white;
         }
 
         body {
-            overflow-y:scroll;
+            overflow-y: scroll;
+            overflow-x: hidden;
         }
     </style>
 
@@ -80,7 +87,7 @@
     {%- for caption, description, table in tables %}
         &nbsp;
         <button class="collapsible"><h3 title="{{ description }}">{{ caption }}</h3></button>
-        <div class="content" style="overflow-x:auto;">
+        <div class="content">
         {{ table }}
         </div>
     {%- endfor %}
@@ -92,7 +99,7 @@
     {%- for caption, description, table in overall_tables %}
         &nbsp;
         <button class="collapsible"><h3 title="{{ description }}">{{ caption }}</h3></button>
-        <div class="content" style="overflow-x:auto;">
+        <div class="content">
         {{ table }}
         </div>
     {%- endfor %}

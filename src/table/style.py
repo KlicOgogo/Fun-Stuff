@@ -18,7 +18,7 @@ STYLES = [
 
 
 def calculate_table_attributes(isSortable, hasPositionColumn):
-    attributes = 'style="border-collapse: collapse; border: 1px solid black;" align="center"; '
+    attributes = 'align="center"; '
     if isSortable:
         attributes += 'class="sortable"; '
 
