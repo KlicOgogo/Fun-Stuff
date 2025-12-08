@@ -172,8 +172,9 @@ def matchup(stats_with_plays, places_with_plays, places_sum, categories_with_pla
                             columns=categories_with_plays)
     df = df.merge(df_stats, how='outer', left_index=True, right_index=True)
 
-    df_metrics = _matchup_metrics(metrics)
-    df = df.merge(df_metrics, how='outer', left_index=True, right_index=True)
+    if metrics is not None:
+        df_metrics = _matchup_metrics(metrics)
+        df = df.merge(df_metrics, how='outer', left_index=True, right_index=True)
 
     places_cols = [f'{col} ' for col in categories_with_plays]
     df_places = pd.DataFrame(list(places_with_plays.values()), index=places_with_plays.keys(), columns=places_cols)
@@ -185,17 +186,20 @@ def matchup(stats_with_plays, places_with_plays, places_sum, categories_with_pla
     df = add_position_column(df)
 
     best, worst = _get_extremums(df, less_win_categories, is_opponent=False)
-    extremum_cols = categories_with_plays + ['Score']
-    if 'ExpScore' in metrics:
-        extremum_cols.append('ExpScore')
+    extremum_cols = categories_with_plays
+    if metrics is not None:
+        extremum_cols.append('Score')
+        if 'ExpScore' in metrics:
+            extremum_cols.append('ExpScore')
 
     num_cols = list(set(df.columns) - {'Team', 'League', 'Score', 'ER', 'ExpScore', 'ATOI'})
     extremum_lambda = lambda s: style.extremum(s, best[s.name], worst[s.name])
     styler = df.style.format('{:g}', subset=pd.IndexSlice[df.index, num_cols]).\
         set_table_attributes(style.ATTRS_SORTABLE).hide().\
         apply(extremum_lambda, subset=pd.IndexSlice[df.index, extremum_cols]).\
-        apply(style.place, subset=pd.IndexSlice[df_stats.index, places_cols]).\
-        map(style.percentage, subset=pd.IndexSlice[df_stats.index, ['TP']])
-    if 'ER' in metrics:
-        styler = styler.map(style.pair_result, subset=pd.IndexSlice[df_stats.index, ['ER']])
+        apply(style.place, subset=pd.IndexSlice[df_stats.index, places_cols])
+    if metrics is not None:
+        styler = styler.map(style.percentage, subset=pd.IndexSlice[df_stats.index, ['TP']])
+        if 'ER' in metrics:
+            styler = styler.map(style.pair_result, subset=pd.IndexSlice[df_stats.index, ['ER']])
     return styler.to_html()

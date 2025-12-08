@@ -1,6 +1,10 @@
 from collections import defaultdict
 
+import numpy as np
 
+
+_epsilon = 0.00000000001
+_players_groups = {'hockey': ['skaters', 'goalies'], 'basketball': ['players']}
 _ATOI = 'Average Time on Ice'
 _basketball_summarizable_cols = [
     'Minutes',
@@ -33,6 +37,9 @@ _hockey_summarizable_cols = [
     'Shifts',
     'Hat Tricks',
     'Defensemen Points',
+
+    'Power Play Points',
+    'Short Handed Points',
 
     # goalies
     'Games Started',
@@ -77,40 +84,60 @@ def _add_to_category_stats(cat, cat_value, stats_summarized, player_stats, sport
         stats_summarized[cat] += float(cat_value)
 
 
-def totals_by_players(stats_list, sports):
+def _update_with_quality_totals(stats, category_short):
+    for cat in category_short:
+        if cat == 'Field Goal Percentage' and 'Field Goals Attempted' in stats and 'Field Goals Made' in stats:
+            fgm_to_fga = stats['Field Goals Made'] / (stats['Field Goals Attempted'] + _epsilon)
+            fg_percentage = np.round(fgm_to_fga * 100.0, 2)
+            stats['Field Goal Percentage'] = fg_percentage
+        if cat == 'Free Throw Percentage' and 'Free Throws Attempted' in stats and 'Free Throws Made' in stats:
+            ftm_to_fta = stats['Free Throws Made'] / (stats['Free Throws Attempted'] + _epsilon)
+            ft_percentage = np.round(ftm_to_fta * 100.0, 2)
+            stats['Free Throw Percentage'] = ft_percentage
+        if cat == 'Save Percentage' and 'Saves' in stats and 'Goals Against' in stats:
+            sv_to_shots = stats['Saves'] / (stats['Goals Against'] + stats['Saves'] + _epsilon)
+            save_percentage = np.round(sv_to_shots * 100.0, 2)
+            stats['Save Percentage'] = save_percentage
+        if cat == 'Goals Against Average' and 'Minutes Played' in stats and 'Goals Against' in stats:
+            gaa = np.round(stats['Goals Against'] * 60.0 / (stats['Minutes Played'] + _epsilon), 2)
+            stats['Goals Against Average'] = gaa
+
+
+def totals_by_players(team_stats, category_short, sports):
     stats_summarized = defaultdict(lambda: defaultdict(int))
-    for stats_item in stats_list:
+    for stats_item in team_stats:
         for player, player_stats in stats_item.items():
             for cat, cat_value in player_stats.items():
                 _add_to_category_stats(cat, cat_value, stats_summarized[player], player_stats, sports)
 
+    for player_stats in stats_summarized.values():
+        _update_with_quality_totals(player_stats, category_short)
     return stats_summarized
 
 
-def stats_by_team(matchup, league_active_stats, players_groups):
+def stats_by_team(matchup, league_box_scores, sports):
     data_by_team = defaultdict(lambda: defaultdict(list))
     categories_info = defaultdict(dict)
     for m in range(matchup):
-        matchup_active_stats = league_active_stats[m]
+        matchup_active_stats = league_box_scores[m]
         for team_key, team_matchup_active_stats in matchup_active_stats.items():
-            team_name = team_key[0]
             categories_data, stats_data, _ = team_matchup_active_stats
             if not categories_data or not stats_data:
                 continue
-            for cat, stat, group in zip(categories_data, stats_data, players_groups):
+            for cat, stat, group in zip(categories_data, stats_data, _players_groups[sports]):
                 if not cat or not stat:
                     continue
-                categories_info[team_name][group] = cat
-                data_by_team[team_name][group].append(stat)
+                categories_info[team_key][group] = cat
+                data_by_team[team_key][group].append(stat)
 
     return data_by_team, categories_info
 
 
-def totals_by_team(stats_list, sports):
+def totals_by_team(team_stats, category_short, sports):
     team_totals = defaultdict(int)
-    for stats_item in stats_list:
+    for stats_item in team_stats:
         for player_stats in stats_item.values():
             for cat, cat_value in player_stats.items():
                 _add_to_category_stats(cat, cat_value, team_totals, player_stats, sports)
-
+    _update_with_quality_totals(team_totals, category_short)
     return team_totals

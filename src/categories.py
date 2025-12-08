@@ -6,6 +6,7 @@ import numpy as np
 import table.analytics
 import table.categories
 import table.common
+import utils.active_stats
 import utils.categories
 import utils.common
 import utils.data
@@ -346,15 +347,59 @@ def _cumulative_tables(cumulative_stats, matchups, global_resources, is_each_cat
     return tables
 
 
-def _rotisserie_tables(matchup, league_box_scores):
+def _rotisserie_tables(matchup, league_box_scores, sports, categories, global_resources):
     if league_box_scores is None:
         return []
 
+    stats_by_team, categories_info = utils.active_stats.stats_by_team(matchup, league_box_scores, sports)
+    totals_by_team = defaultdict(dict)
+    for team_key, team_stats in stats_by_team.items():
+        for group, group_team_stats in team_stats.items():
+            team_categories = categories_info[team_key][group]
+            _, category_short = team_categories
+            group_team_totals = utils.active_stats.totals_by_team(group_team_stats, category_short, sports)
+            totals_by_team[team_key][group] = group_team_totals
 
+    league_categories = {}
+    for team_categories in categories_info.values():
+        for group, team_group_categories in team_categories.items():
+            group_categories = league_categories.get(group, None)
+            _, categories_to_short = team_group_categories
+            short_to_long = {short: long for long, short in categories_to_short.items()}
+            if group_categories is None:
+                league_categories[group] = short_to_long
+            elif group_categories != short_to_long:
+                raise Exception('Box score stats categories not match inside the league')
 
-    tables = []
+    category_to_full_name = {}
+    for cat in categories:
+        for group, group_short_to_long in league_categories.items():
+            if cat in group_short_to_long:
+                category_to_full_name[cat] = (group, group_short_to_long[cat])
+
+    if set(categories) != set(category_to_full_name.keys()):
+        raise Exception('Not all categories found')
+
+    stats = defaultdict(list)
+    for team, team_totals in totals_by_team.items():
+        for cat in categories:
+            group, cat_long_name = category_to_full_name[cat]
+            team_cat_total = team_totals[group][cat_long_name]
+            stats[team].append(team_cat_total)
+
+    places = utils.categories.get_places_data(stats, categories, _less_win_categories)
+    places_sum = {team: np.sum(places[team]) for team in places}
+
+    titles = global_resources['titles']
+    descriptions = global_resources['descriptions']
+    tables = [
+        [
+            titles['rotisserie'],
+            descriptions['rotisserie'],
+            table.categories.matchup(stats, places, places_sum, categories, _less_win_categories, None)
+        ]
+    ]
     return tables
-
 
 
 def _group_tables(group_settings, matchup, scoreboards, box_scores, global_resources):
@@ -372,8 +417,9 @@ def _group_tables(group_settings, matchup, scoreboards, box_scores, global_resou
             titles['matchup'], descriptions['matchup'],
             _matchup_table(league, group_settings, matchup, scoreboards, league_box_scores)]
 
-        roto_tables = _rotisserie_tables(matchup, league_box_scores)
         scores, _, category_pairs, league_name = scoreboards[league]
+        _, categories = category_pairs[matchup - 1]
+        roto_tables = _rotisserie_tables(matchup, league_box_scores, sports, categories, global_resources)
         cumulative_stats = _cumulative_stats(matchup, scores, category_pairs, tiebreaker)
         cumulative_tables = _cumulative_tables(cumulative_stats, matchups, global_resources, is_each_category)
         plays_tables = _plays_tables(sports, matchups, league_box_scores, global_resources)

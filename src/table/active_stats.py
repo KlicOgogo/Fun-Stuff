@@ -25,22 +25,6 @@ def _calculate_player_rows(player, stats, all_categories, category_short):
         data_row.append(stats[cat])
         columns_row.append(category_short[cat])
 
-        if cat == 'Field Goals Attempted' and 'Field Goals Made' in stats and 'Field Goal Percentage' in category_short:
-            fg_percentage = np.round(stats['Field Goals Made'] / (stats[cat] + _epsilon) * 100.0, 1)
-            data_row.append(fg_percentage)
-            columns_row.append(category_short['Field Goal Percentage'])
-        if cat == 'Free Throws Attempted' and 'Free Throws Made' in stats and 'Free Throw Percentage' in category_short:
-            ft_percentage = np.round(stats['Free Throws Made'] / (stats[cat] + _epsilon) * 100.0, 1)
-            data_row.append(ft_percentage)
-            columns_row.append(category_short['Free Throw Percentage'])
-        if cat == 'Saves' and 'Goals Against' in stats and 'Save Percentage' in category_short:
-            save_percentage = np.round(stats[cat] / (stats['Goals Against'] + stats[cat] + _epsilon) * 100.0, 1)
-            data_row.append(save_percentage)
-            columns_row.append(category_short['Save Percentage'])
-        if cat == 'Minutes Played' and 'Goals Against' in stats and 'Goals Against Average' in category_short:
-            gaa = np.round(stats['Goals Against'] * 60.0 / (stats[cat] + _epsilon), 2)
-            data_row.append(gaa)
-            columns_row.append(category_short['Goals Against Average'])
         if cat == 'FPTS' and 'Skater Games Played' in stats:
             fpg = np.round(stats[cat] / (stats['Skater Games Played'] + _epsilon), 1)
             data_row.append(fpg)

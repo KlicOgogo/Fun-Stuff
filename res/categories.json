@@ -151,5 +151,16 @@
         "is_full_support": true,
         "is_playoffs_support": true,
         "is_analytics_enabled": [1]
-    }
+    },
+    {
+        "sports": "hockey",
+        "leagues": ["59228"],
+        "tiebreaker": "NO",
+        "is_each_category": false,
+        "is_full_support": true,
+        "is_playoffs_support": true,
+        "gk_threshold": 3,
+        "is_playoffs_double_gk_threshold": true,
+        "is_analytics_enabled": [1]
+     }
 ]

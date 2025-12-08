@@ -8,7 +8,7 @@
     "mean": "Mean scores",
     "mean_places": "Mean scores places",
     "pairwise_h2h": "Pairwise comparisons h2h",
-    
+
     "places_overall": "Overall places",
     "best_matchup": "Best scores this matchup",
     "best_season": "Best scores this season",
@@ -25,7 +25,7 @@
     "minutes_places": "Minutes places",
     "games": "Player games",
     "games_places": "Player games places",
-    
+
     "team_category_record": "{}: category record",
     "result_expectation": "{}: result expectation",
 
@@ -35,5 +35,7 @@
     "recent_category_power": "Category power (last {})",
     "category_rankings": "Category rankings",
     "result_expectation_h2h": "Result expectation h2h",
-    "category_places": "{}: places"
+    "category_places": "{}: places",
+
+    "rotisserie": "Rotisserie"
 }
