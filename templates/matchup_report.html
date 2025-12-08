@@ -122,6 +122,17 @@
         .table-scroll {
             overflow-x: auto;
         }
+
+        {%- if use_viewport %}
+            @media (max-width: 768px) {
+                .collapsible {
+                    width: 60%;
+                }
+                .text-box {
+                    width: 80%;
+                }
+            }
+        {%- endif %}
     </style>
 
     <head>
