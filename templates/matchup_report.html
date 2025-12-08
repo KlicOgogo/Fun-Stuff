@@ -98,7 +98,7 @@
             padding: 0 18px;
             max-height: 0;
             overflow-y: hidden;
-            overflow-x: auto;
+            overflow-x: hidden;
             transition: max-height 0.3s ease-out;
             background-color: white;
             max-width: none;
@@ -108,7 +108,7 @@
             padding: 0 18px;
             max-height: none;
             overflow-y: visible;
-            overflow-x: auto;
+            overflow-x: hidden;
             transition: max-height 0.3s ease-in;
             background-color: white;
             max-width: none;
@@ -118,10 +118,17 @@
             overflow-y: scroll;
             overflow-x: hidden;
         }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
     </style>
 
     <head>
         <meta charset="UTF-8">
+        {%- if use_viewport %}
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        {%- endif %}
         <link rel="icon" type="image/png" href="https://klicogogo.github.io/res/favicon.ico"/>
     </head>
     <!-- Google tag (gtag.js) -->
@@ -146,7 +153,9 @@
                     <div class="text-box">
                         {{ description }}
                     </div>
-                    {{ table }}
+                    <div class="table-scroll">
+                        {{ table }}
+                    </div>
                 </div>
             {%- endfor %}
         {%- endfor %}
@@ -161,7 +170,9 @@
                 <div class="text-box">
                     {{ description }}
                 </div>
-                {{ table }}
+                <div class="table-scroll">
+                    {{ table }}
+                </div>
             </div>
         {%- endfor %}
 
