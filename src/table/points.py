@@ -30,8 +30,9 @@ def luck_score(luck, matchups, opp_flag, n_last):
     sort_indexes = np.lexsort([df[col] * coeff for col, coeff in zip(sort_cols, [1.0, -1.0, 1.0, 1.0])])
     df = df.iloc[sort_indexes]
     df = add_position_column(df)
+    table_attributes = style.calculate_table_attributes(isSortable=True, hasPositionColumn=True)
     styler = df.style.format({c: '{:g}' for c in set(cols) - {'Team'}}).\
-        set_table_attributes(style.ATTRS_SORTABLE).hide().\
+        set_table_attributes(table_attributes).hide().\
         map(style.opponent_luck_score if opp_flag else style.value, subset=matchups)
     return styler.to_html()
 
@@ -42,6 +43,7 @@ def top(data, n_top, cols, drop_league_col_flag):
     df = add_position_column(df)
     if drop_league_col_flag:
         df.drop('League', axis=1, inplace=True)
+    table_attributes = style.calculate_table_attributes(isSortable=False, hasPositionColumn=True)
     styler = df.style.format({c: '{:g}' for c in set(cols) - {'Team', 'League'}}).\
-        set_table_attributes(style.ATTRS).hide()
+        set_table_attributes(table_attributes).hide()
     return styler.to_html()

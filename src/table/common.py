@@ -45,7 +45,8 @@ def h2h(h2h_comparisons):
 
     df = pd.DataFrame(df_data, columns=['Team', *np.arange(1, len(df_data)+1), 'W  ', 'L', 'D', '%'])
     df = add_position_column(df)
-    styler = df.style.format({'%': '{:g}'}).set_table_attributes(style.ATTRS).hide().\
+    table_attributes = style.calculate_table_attributes(isSortable=False, hasPositionColumn=True)
+    styler = df.style.format({'%': '{:g}'}).set_table_attributes(table_attributes).hide().\
         map(style.percentage, subset=['%'])
     return styler.to_html()
 
@@ -72,8 +73,9 @@ def places(places_data, matchups, opp_flag, is_overall, n_last):
     sort_indexes = np.lexsort([df[col] * coeff for col, coeff in zip(sort_cols, [1.0, -1.0, 1.0, 1.0])])
     df = df.iloc[sort_indexes]
     df = add_position_column(df)
+    table_attributes = style.calculate_table_attributes(isSortable=True, hasPositionColumn=True)
     styler = df.style.format({c: '{:g}' for c in set(cols) - {'Team'}}).\
-        set_table_attributes(style.ATTRS_SORTABLE).hide().\
+        set_table_attributes(table_attributes).hide().\
         apply(style.opponent_place if opp_flag else style.place, subset=matchups)
     return styler.to_html()
 
@@ -105,7 +107,8 @@ def scores(scores_data, matchups, opp_flag, n_last):
     sort_indexes = np.lexsort([df[col] * coeff for col, coeff in zip(sort_cols, [1.0, 1.0, -1.0, -1.0, -1.0, -1.0])])
     df = df.iloc[sort_indexes]
     df = add_position_column(df)
+    table_attributes = style.calculate_table_attributes(isSortable=True, hasPositionColumn=True)
     styler = df.style.format({c: '{:g}' for c in set(cols) - {'Team'}}).\
-        set_table_attributes(style.ATTRS_SORTABLE).hide().\
+        set_table_attributes(table_attributes).hide().\
         apply(style.opponent_score if opp_flag else style.score, subset=matchups)
     return styler.to_html()

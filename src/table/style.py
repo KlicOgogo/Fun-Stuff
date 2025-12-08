@@ -3,10 +3,6 @@ import numpy as np
 from table import flag
 
 
-ATTRS = '; align="center"'
-ATTRS_SORTABLE = '; align="center"; class="sortable"'
-
-
 def calculate_table_attributes(isSortable, hasPositionColumn):
     attributes = '; align="center"; '
     if isSortable:
