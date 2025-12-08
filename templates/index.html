@@ -71,7 +71,8 @@
             border-radius: 10px;
             margin-bottom: 10px;
         }
-		.collapsible.active, .collapsible:hover {
+
+        .collapsible.active, .collapsible:hover {
             background-color: #dcdcdc;
         }
 
@@ -88,7 +89,8 @@
             outline: none;
             border-radius: 10px;
         }
-		.league_page.active, .league_page:hover {
+
+        .league_page.active, .league_page:hover {
             background-color: #b4b4b4;
         }
 
@@ -126,8 +128,7 @@
             margin-bottom: 10px;
         }
 
-        .content,
-        .content.expanded {
+        .content, .content.expanded {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -147,11 +148,11 @@
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-6N4SMS2DV4"></script>
     <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
+        window.dataLayer = window.dataLayer || [];
+        function gtag() {dataLayer.push(arguments);}
+        gtag('js', new Date());
 
-    gtag('config', 'G-6N4SMS2DV4');
+        gtag('config', 'G-6N4SMS2DV4');
     </script>
 
 	<body align="center">
@@ -160,12 +161,12 @@
 		{%- for sports, sports_indexes in indexes.items() %}
 			<h2>{{ sports }}</h2>
 			{%- for league_name, league_links in sports_indexes|dictsort %}
-			<button class="collapsible"><h3>{{ league_name }}</h3></button>
-            <div class="content">
-			{%- for report_type, page_url in league_links %}
-				<div class="league_page"><h4><a href="{{ page_url }}" class="class1">{{ report_type }}</a></h4></div>
-			{%- endfor %}
-			</div>
+                <button class="collapsible"><h3>{{ league_name }}</h3></button>
+                <div class="content">
+                {%- for report_type, page_url in league_links %}
+                    <div class="league_page"><h4><a href="{{ page_url }}" class="class1">{{ report_type }}</a></h4></div>
+                {%- endfor %}
+                </div>
 			{%- endfor %}
 		{%- endfor %}
 
@@ -188,11 +189,11 @@
             var i;
 
             for (i = 0; i < coll.length; i++) {
-              coll[i].addEventListener("click", function() {
-                this.classList.toggle("active");
-                var content = this.nextElementSibling;
-                content.classList.toggle("expanded");
-              });
+                coll[i].addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    var content = this.nextElementSibling;
+                    content.classList.toggle("expanded");
+                });
             }
         </script>
 	</body>

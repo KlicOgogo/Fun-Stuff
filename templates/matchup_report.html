@@ -63,6 +63,7 @@
         table[data-sticky] tr:nth-child(odd) td {
             background: #F0F0F0;
         }
+
         table[data-sticky] tr:nth-child(even) td {
             background: #FFFFFF;
         }
@@ -126,50 +127,51 @@
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ google_analytics_key }}"></script>
     <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
+        window.dataLayer = window.dataLayer || [];
+        function gtag() {dataLayer.push(arguments);}
+        gtag('js', new Date());
 
-    gtag('config', '{{ google_analytics_key }}');
+        gtag('config', '{{ google_analytics_key }}');
     </script>
 
     <body align="center">
         <title>{{ title }}</title>
         <h1><a href="{{ index }}" style="text-decoration:none;">{{ header }}</a></h1>
-{% for league_name, league_link, tables in leagues %}
-        <h2><a href="{{ league_link }}" style="text-decoration:none;">{{ league_name }}</a></h2>
-    {%- for caption, description, table in tables %}
-        &nbsp;
-        <button class="collapsible"><h3>{{ caption }}</h3></button>
-        <div class="content">
-        <div class="text-box">
-            {{ description }}
-        </div>
-        {{ table }}
-        </div>
-    {%- endfor %}
-{%- endfor %}
-
-    {%- if overall_tables|length > 0 %}
-        <h2>Summary</h2>
-    {%- endif %}
-    {%- for caption, description, table in overall_tables %}
-        &nbsp;
-        <button class="collapsible"><h3>{{ caption }}</h3></button>
-        <div class="content">
-        <div class="text-box">
-            {{ description }}
-        </div>
-        {{ table }}
-        </div>
-    {%- endfor %}
-        {%- if previous_reports|length > 0 %}
-        <h2 class="list-heading">Previous reports</h2>
-        <ul style="list-style-type:none;">
-        {%- for matchup_number, link_data in previous_reports|dictsort(reverse=true) %}
-            <li><a href="{{ link_data[1] }}" style="text-decoration:none;">{{ link_data[0] }}</a></li>
+        {% for league_name, league_link, tables in leagues %}
+            <h2><a href="{{ league_link }}" style="text-decoration:none;">{{ league_name }}</a></h2>
+            {%- for caption, description, table in tables %}
+                &nbsp;
+                <button class="collapsible"><h3>{{ caption }}</h3></button>
+                <div class="content">
+                    <div class="text-box">
+                        {{ description }}
+                    </div>
+                    {{ table }}
+                </div>
+            {%- endfor %}
         {%- endfor %}
-        </ul>
+
+        {%- if overall_tables|length > 0 %}
+            <h2>Summary</h2>
+        {%- endif %}
+        {%- for caption, description, table in overall_tables %}
+            &nbsp;
+            <button class="collapsible"><h3>{{ caption }}</h3></button>
+            <div class="content">
+                <div class="text-box">
+                    {{ description }}
+                </div>
+                {{ table }}
+            </div>
+        {%- endfor %}
+
+        {%- if previous_reports|length > 0 %}
+            <h2 class="list-heading">Previous reports</h2>
+            <ul style="list-style-type:none;">
+            {%- for matchup_number, link_data in previous_reports|dictsort(reverse=true) %}
+                <li><a href="{{ link_data[1] }}" style="text-decoration:none;">{{ link_data[0] }}</a></li>
+            {%- endfor %}
+            </ul>
         {%- endif %}
 
         <script>
@@ -177,11 +179,11 @@
             var i;
 
             for (i = 0; i < coll.length; i++) {
-              coll[i].addEventListener("click", function() {
-                this.classList.toggle("active");
-                var content = this.nextElementSibling;
-                content.classList.toggle("expanded");
-              });
+                coll[i].addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    var content = this.nextElementSibling;
+                    content.classList.toggle("expanded");
+                });
             }
         </script>
         <script src="https://klicogogo.github.io/res/sorttable.js"></script>
@@ -197,7 +199,7 @@
                     // Calculate cumulative widths
                     for (let col = 0; col < numSticky; col++) {
                         let width = rows[0].cells[col].offsetWidth;
-                        offsets[col] = (offsets[col - 1] || 0) + width -1;
+                        offsets[col] = (offsets[col - 1] || 0) + width - 1;
                     }
 
                     // Apply sticky + left offsets

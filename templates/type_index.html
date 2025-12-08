@@ -54,7 +54,8 @@
 		}
 
 		body {
-			overflow-y:scroll;
+			overflow-y: scroll;
+			overflow-x: hidden;
 		}
 	</style>
 
@@ -65,21 +66,21 @@
 	<!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ google_analytics_key }}"></script>
     <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
+		window.dataLayer = window.dataLayer || [];
+		function gtag() {dataLayer.push(arguments);}
+		gtag('js', new Date());
 
-    gtag('config', '{{ google_analytics_key }}');
+		gtag('config', '{{ google_analytics_key }}');
     </script>
 
 	<body align="center">
 		<title>{{ title }}</title>
         <h1>{{ title }}</h1>
 		{%- if indexes|length > 0 %}
-		<h2>Leagues</h2>
-		{%- for league_name, index_url in indexes|dictsort %}
-			<h3><a href="{{ index_url }}" class="league">{{ league_name }}</a></h3>
-		{%- endfor %}
+			<h2>Leagues</h2>
+			{%- for league_name, index_url in indexes|dictsort %}
+				<h3><a href="{{ index_url }}" class="league">{{ league_name }}</a></h3>
+			{%- endfor %}
 		{%- endif %}
 
 		<h1 style="margin:0">About</h1>

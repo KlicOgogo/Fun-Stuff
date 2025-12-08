@@ -50,6 +50,7 @@
             background-color: white;
             gap: 10px;
         }
+
         .content.expanded {
             -webkit-overflow-scrolling: touch;
             padding: 0 18px;
@@ -76,11 +77,11 @@
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ google_analytics_key }}"></script>
     <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
+        window.dataLayer = window.dataLayer || [];
+        function gtag() {dataLayer.push(arguments);}
+        gtag('js', new Date());
 
-    gtag('config', '{{ google_analytics_key }}');
+        gtag('config', '{{ google_analytics_key }}');
     </script>
 
 	<body align="center">
@@ -88,14 +89,14 @@
         <h1><a href="{{ index }}" style="text-decoration:none;">{{ title }}</a></h1>
         <h1><a href="{{ league_link }}" style="text-decoration:none;" class="class1">{{ league_name }} ({{ sports }})</a></h1>
 		{%- if indexes_by_year|length > 0 %}
-		{%- for year_str, reports_dict in indexes_by_year %}
-			<button class="collapsible"><h2>{{ year_str }}</h2></button>
-            <div class="content">
-            {%- for name, link in reports_dict.items() %}
-            <h3 style="margin:0"><a href="{{ link }}" style="text-decoration:none;">{{ name }}</a></h3>
+            {%- for year_str, reports_dict in indexes_by_year %}
+                <button class="collapsible"><h2>{{ year_str }}</h2></button>
+                <div class="content">
+                {%- for name, link in reports_dict.items() %}
+                    <h3 style="margin:0"><a href="{{ link }}" style="text-decoration:none;">{{ name }}</a></h3>
+                {%- endfor %}
+                </div>
             {%- endfor %}
-            </div>
-		{%- endfor %}
 		{%- endif %}
 
         <script>
@@ -103,11 +104,11 @@
             var i;
 
             for (i = 0; i < coll.length; i++) {
-              coll[i].addEventListener("click", function() {
-                this.classList.toggle("active");
-                var content = this.nextElementSibling;
-                content.classList.toggle("expanded");
-              });
+                coll[i].addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    var content = this.nextElementSibling;
+                    content.classList.toggle("expanded");
+                });
             }
         </script>
 	</body>
