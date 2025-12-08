@@ -376,7 +376,6 @@ def _rotisserie_tables(matchup, league_box_scores, sports, categories, global_re
         for group, group_short_to_long in league_categories.items():
             if cat in group_short_to_long:
                 category_to_full_name[cat] = (group, group_short_to_long[cat])
-
     if set(categories) != set(category_to_full_name.keys()):
         raise Exception('Not all categories found')
 
@@ -386,16 +385,13 @@ def _rotisserie_tables(matchup, league_box_scores, sports, categories, global_re
             group, cat_long_name = category_to_full_name[cat]
             team_cat_total = team_totals[group][cat_long_name]
             stats[team].append(team_cat_total)
-
     places = utils.categories.get_places_data(stats, categories, _less_win_categories)
     places_sum = {team: np.sum(places[team]) for team in places}
 
-    titles = global_resources['titles']
-    descriptions = global_resources['descriptions']
     tables = [
         [
-            titles['rotisserie'],
-            descriptions['rotisserie'],
+            global_resources['titles']['rotisserie'],
+            global_resources['descriptions']['rotisserie'],
             table.categories.matchup(stats, places, places_sum, categories, _less_win_categories, None)
         ]
     ]
