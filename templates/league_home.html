@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
-	<style>
-		a.class1:link {
+    <style>
+        a.class1:link {
             color: black;
             background-color: transparent;
             text-decoration: none;
@@ -65,10 +65,10 @@
         }
 
         body {
-			overflow-y: scroll;
+            overflow-y: scroll;
             overflow-x: hidden;
-		}
-	</style>
+        }
+    </style>
 
     <head>
         <meta charset="UTF-8">
@@ -84,11 +84,11 @@
         gtag('config', '{{ google_analytics_key }}');
     </script>
 
-	<body align="center">
+    <body align="center">
         <title>{{ league_name }} ({{ sports }})</title>
         <h1><a href="{{ index }}" style="text-decoration:none;">{{ title }}</a></h1>
         <h1><a href="{{ league_link }}" style="text-decoration:none;" class="class1">{{ league_name }} ({{ sports }})</a></h1>
-		{%- if indexes_by_year|length > 0 %}
+        {%- if indexes_by_year|length > 0 %}
             {%- for year_str, reports_dict in indexes_by_year %}
                 <button class="collapsible"><h2>{{ year_str }}</h2></button>
                 <div class="content">
@@ -97,7 +97,7 @@
                 {%- endfor %}
                 </div>
             {%- endfor %}
-		{%- endif %}
+        {%- endif %}
 
         <script>
             var coll = document.getElementsByClassName("collapsible");
@@ -111,5 +111,5 @@
                 });
             }
         </script>
-	</body>
+    </body>
 </html>
