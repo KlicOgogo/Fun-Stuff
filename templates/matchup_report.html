@@ -197,7 +197,7 @@
                     // Calculate cumulative widths
                     for (let col = 0; col < numSticky; col++) {
                         let width = rows[0].cells[col].offsetWidth;
-                        offsets[col] = (offsets[col - 1] || 0) + width;
+                        offsets[col] = (offsets[col - 1] || 0) + width -1;
                     }
 
                     // Apply sticky + left offsets
