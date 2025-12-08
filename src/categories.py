@@ -346,6 +346,17 @@ def _cumulative_tables(cumulative_stats, matchups, global_resources, is_each_cat
     return tables
 
 
+def _rotisserie_tables(matchup, league_box_scores):
+    if league_box_scores is None:
+        return []
+
+
+
+    tables = []
+    return tables
+
+
+
 def _group_tables(group_settings, matchup, scoreboards, box_scores, global_resources):
     titles = global_resources['titles']
     descriptions = global_resources['descriptions']
@@ -361,13 +372,14 @@ def _group_tables(group_settings, matchup, scoreboards, box_scores, global_resou
             titles['matchup'], descriptions['matchup'],
             _matchup_table(league, group_settings, matchup, scoreboards, league_box_scores)]
 
+        roto_tables = _rotisserie_tables(matchup, league_box_scores)
         scores, _, category_pairs, league_name = scoreboards[league]
         cumulative_stats = _cumulative_stats(matchup, scores, category_pairs, tiebreaker)
         cumulative_tables = _cumulative_tables(cumulative_stats, matchups, global_resources, is_each_category)
         plays_tables = _plays_tables(sports, matchups, league_box_scores, global_resources)
 
         league_link = f'https://fantasy.espn.com/{sports}/league?leagueId={league}'
-        league_tables = [matchup_results_table] + cumulative_tables + plays_tables
+        league_tables = [matchup_results_table] + roto_tables + cumulative_tables + plays_tables
         group_tables.append([league_name, league_link, league_tables])
 
     return group_tables

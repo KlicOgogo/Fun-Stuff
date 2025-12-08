@@ -1,38 +1,22 @@
-from collections import defaultdict
-
 import table.active_stats
 import utils.active_stats
 
 
 def _league_tables(sports, matchup, league_active_stats, descriptions):
     players_groups = ['skaters', 'goalies'] if sports == 'hockey' else ['players']
-
-    data_by_team = defaultdict(lambda: defaultdict(list))
-    categories_info = defaultdict(dict)
-    for m in range(matchup):
-        matchup_active_stats = league_active_stats[m]
-        for team_key, team_matchup_active_stats in matchup_active_stats.items():
-            team_name = team_key[0]
-            categories_data, stats_data, _ = team_matchup_active_stats
-            if not categories_data or not stats_data:
-                continue
-            for cat, stat, group in zip(categories_data, stats_data, players_groups):
-                if not cat or not stat:
-                    continue
-                categories_info[team_name][group] = cat
-                data_by_team[team_name][group].append(stat)
+    data_by_team, categories_info = utils.active_stats.stats_by_team(matchup, league_active_stats, players_groups)
 
     tables = []
     for team_name in sorted(data_by_team):
         for group in data_by_team[team_name]:
-            team_stats_list = data_by_team[team_name][group]
+            team_stats = data_by_team[team_name][group]
 
-            team_stats_summarized = utils.active_stats.summarize_team_stats(team_stats_list, sports)
+            team_player_totals = utils.active_stats.totals_by_players(team_stats, sports)
             team_categories = categories_info[team_name][group]
-            if team_stats_summarized:
+            if team_player_totals:
                 tables.append([
                     f'{team_name}: {group}', descriptions['active_stats'],
-                    table.active_stats.matchup(team_stats_summarized, team_categories)])
+                    table.active_stats.matchup(team_player_totals, team_categories)])
 
     return tables
 

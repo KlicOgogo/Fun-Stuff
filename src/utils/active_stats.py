@@ -64,20 +64,53 @@ def _get_updated_atoi(games1, atoi1, games2, atoi2):
     return f'{average_minutes}:{seconds_formatted}'
 
 
-def summarize_team_stats(stats_list, sports):
+def _add_to_category_stats(cat, cat_value, stats_summarized, player_stats, sports):
+    if cat == 'Skater Games Played' and _ATOI in player_stats:
+        stats_summarized.setdefault(_ATOI, '00:00')
+        stats_summarized[_ATOI] = _get_updated_atoi(
+            stats_summarized[cat], stats_summarized[_ATOI],
+            int(cat_value), player_stats[_ATOI])
+
+    if cat in _int_summarizable_cols[sports]:
+        stats_summarized[cat] += int(cat_value)
+    elif cat == 'FPTS':
+        stats_summarized[cat] += float(cat_value)
+
+
+def totals_by_players(stats_list, sports):
     stats_summarized = defaultdict(lambda: defaultdict(int))
     for stats_item in stats_list:
         for player, player_stats in stats_item.items():
             for cat, cat_value in player_stats.items():
-                if cat == 'Skater Games Played' and _ATOI in player_stats:
-                    stats_summarized[player].setdefault(_ATOI, '00:00')
-                    stats_summarized[player][_ATOI] = _get_updated_atoi(
-                        stats_summarized[player][cat], stats_summarized[player][_ATOI],
-                        int(cat_value), player_stats[_ATOI])
-
-                if cat in _int_summarizable_cols[sports]:
-                    stats_summarized[player][cat] += int(cat_value)
-                elif cat == 'FPTS':
-                    stats_summarized[player][cat] += float(cat_value)
+                _add_to_category_stats(cat, cat_value, stats_summarized[player], player_stats, sports)
 
     return stats_summarized
+
+
+def stats_by_team(matchup, league_active_stats, players_groups):
+    data_by_team = defaultdict(lambda: defaultdict(list))
+    categories_info = defaultdict(dict)
+    for m in range(matchup):
+        matchup_active_stats = league_active_stats[m]
+        for team_key, team_matchup_active_stats in matchup_active_stats.items():
+            team_name = team_key[0]
+            categories_data, stats_data, _ = team_matchup_active_stats
+            if not categories_data or not stats_data:
+                continue
+            for cat, stat, group in zip(categories_data, stats_data, players_groups):
+                if not cat or not stat:
+                    continue
+                categories_info[team_name][group] = cat
+                data_by_team[team_name][group].append(stat)
+
+    return data_by_team, categories_info
+
+
+def totals_by_team(stats_list, sports):
+    team_totals = defaultdict(int)
+    for stats_item in stats_list:
+        for player_stats in stats_item.values():
+            for cat, cat_value in player_stats.items():
+                _add_to_category_stats(cat, cat_value, team_totals, player_stats, sports)
+
+    return team_totals

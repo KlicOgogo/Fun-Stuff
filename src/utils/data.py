@@ -350,20 +350,20 @@ def _matchup_category_pairs(scoreboard_html, league_id, league_name, team_names)
     return pairs, categories
 
 
-def minutes(matchup_box_scores_data):
-    if not matchup_box_scores_data:
+def minutes(matchup_box_scores):
+    if not matchup_box_scores:
         return None
     minutes = {}
-    for team, (_, _, box_scores_totals) in matchup_box_scores_data.items():
+    for team, (_, _, box_scores_totals) in matchup_box_scores.items():
         minutes[team] = int(box_scores_totals['MIN']) if 'MIN' in box_scores_totals else 0
     return minutes if np.sum(list(minutes.values())) != 0 else None
 
 
-def player_games(matchup_box_scores_data):
-    if not matchup_box_scores_data:
+def player_games(matchup_box_scores):
+    if not matchup_box_scores:
         return None
     player_games = {}
-    for team, (_, _, box_scores_totals) in matchup_box_scores_data.items():
+    for team, (_, _, box_scores_totals) in matchup_box_scores.items():
         player_games[team] = int(box_scores_totals['GP']) if 'GP' in box_scores_totals else 0
         player_games[team] += int(box_scores_totals['GS']) if 'GS' in box_scores_totals else 0
     return player_games if np.sum(list(player_games.values())) != 0 else None
