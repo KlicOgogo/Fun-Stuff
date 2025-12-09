@@ -168,7 +168,7 @@ def _apply_activation_pairs(matchup_pairs, matchup, settings, stats):
                 else:
                     updated_player_stats.append((cat, stat))
             updated_pair.append((team, updated_player_stats))
-        pairs_updated.append(tuple(updated_pair))
+        pairs_updated.append(updated_pair)
 
     return pairs_updated
 
@@ -192,7 +192,7 @@ def _activation_stats(league_box_scores, matchups):
         return None
 
     return {
-        'goalkeeper_games': {m: utils.data.goalkeeper_games(league_box_scores[m-1]) for m in matchups}
+        'goalkeeper_games': {m: utils.data.goalkeeper_games(league_box_scores[m - 1]) for m in matchups}
     }
 
 

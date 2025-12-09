@@ -347,7 +347,7 @@ def _parse_matchup_category_pairs(scoreboard_html, league_id, league_name, team_
                 else:
                     stats.append((cat, float(stat)))
             pair.append((team, stats))
-        pairs.append(tuple(pair))
+        pairs.append(pair)
     return pairs, categories
 
 
@@ -420,6 +420,38 @@ def group_schedule(group_settings, browser, use_offline_schedule):
     return schedule
 
 
+def _update_matchup_scores(matchup_scores, league_id, league_name, team_names):
+    matchup_scores_actual = []
+    for pair in matchup_scores:
+        pair_actualized = []
+        for old_team_key, team_stats in pair:
+            team_id = old_team_key[1]
+            actual_team_key = (team_names[team_id], team_id, league_name, league_id)
+            pair_actualized.append((actual_team_key, team_stats))
+
+        matchup_scores_actual.append(pair_actualized)
+
+    return matchup_scores_actual
+
+
+def _update_matchup_category_pairs(matchup_category_pairs, league_id, league_name, team_names):
+    if matchup_category_pairs is None:
+        return matchup_category_pairs
+
+    stats_pairs, categories = matchup_category_pairs
+    stats_pairs_actual = []
+
+    for pair in stats_pairs:
+        pair_actualized = []
+        for old_team_key, team_stats in pair:
+            team_id = old_team_key[1]
+            actual_team_key = (team_names[team_id], team_id, league_name, league_id)
+            pair_actualized.append((actual_team_key, team_stats))
+
+        stats_pairs_actual.append(pair_actualized)
+    return stats_pairs_actual, categories
+
+
 def load_scoreboards(league_id, sports, matchup, browser, online_matchups, is_category_league):
     today = datetime.datetime.today().date()
     season_start_year = today.year if today.month > 6 else today.year - 1
@@ -433,35 +465,39 @@ def load_scoreboards(league_id, sports, matchup, browser, online_matchups, is_ca
     scores = {}
     category_pairs = {}
     for m in range(matchup, 0, -1):
-        html_soup = None
-        while html_soup is None or html_soup.find('div', {'class': 'Scoreboard__Row'}) is None:
-            matchup_html_path = os.path.join(offline_scoreboard_dir, f'matchup_{m}.html')
-            if m in online_matchups or not os.path.exists(matchup_html_path):
+        matchup_pkl_path = os.path.join(offline_scoreboard_dir, f'matchup_{m}.pkl')
+        if m not in online_matchups and os.path.exists(matchup_pkl_path):
+            with open(matchup_pkl_path, 'rb') as fp:
+                matchup_scores, matchup_team_names, matchup_category_pairs, matchup_league_name = pickle.load(fp)
+
+            actual_league_name = matchup_league_name if league_name is None else league_name
+            actual_team_names = matchup_team_names if team_names is None else team_names
+            matchup_scores = _update_matchup_scores(matchup_scores, league_id, actual_league_name, actual_team_names)
+            matchup_category_pairs = _update_matchup_category_pairs(
+                matchup_category_pairs, league_id, actual_league_name, actual_team_names)
+        else:
+            html_soup = None
+            while html_soup is None or html_soup.find('div', {'class': 'Scoreboard__Row'}) is None:
                 scoreboard_url = f'{espn_scoreboard_url}?leagueId={league_id}&matchupPeriodId={m}'
                 html_soup = browser.read_page_source(scoreboard_url)
-                with open(matchup_html_path, 'w', encoding='utf-8') as html_fp:
-                    html_fp.write(str(html_soup))
-            else:
-                html_soup = BeautifulSoup(open(matchup_html_path, 'r', encoding='utf-8'), features='html.parser')
 
-        matchup_league_name = html_soup.findAll('h3')[0].text
-        if league_name is None:
-            league_name = matchup_league_name
-        matchup_team_names = _parse_team_names(html_soup)
-        if team_names is None:
-            team_names = matchup_team_names
+            matchup_league_name = html_soup.findAll('h3')[0].text
+            matchup_team_names = _parse_team_names(html_soup)
 
-        matchup_scores = _parse_matchup_scores(html_soup, league_id, league_name, team_names)
+            actual_league_name = matchup_league_name if league_name is None else league_name
+            actual_team_names = matchup_team_names if team_names is None else team_names
+            matchup_scores = _parse_matchup_scores(html_soup, league_id, actual_league_name, actual_team_names)
+            matchup_category_pairs = None if not is_category_league \
+                else _parse_matchup_category_pairs(html_soup, league_id, actual_league_name, actual_team_names)
+
+            with open(matchup_pkl_path, 'wb') as fp:
+                matchup_data = (matchup_scores, matchup_team_names, matchup_category_pairs, matchup_league_name)
+                pickle.dump(matchup_data, fp)
+
+        league_name = matchup_league_name if league_name is None else league_name
+        team_names = matchup_team_names if team_names is None else team_names
         scores[m] = matchup_scores
-
-        matchup_category_pairs = _parse_matchup_category_pairs(html_soup, league_id, league_name, team_names) \
-            if is_category_league else None
         category_pairs[m] = matchup_category_pairs
-
-        matchup_pkl_path = os.path.join(offline_scoreboard_dir, f'matchup_{m}.pkl')
-        with open(matchup_pkl_path, 'wb') as fp:
-            matchup_data = (matchup_scores, matchup_team_names, matchup_category_pairs, matchup_league_name)
-            pickle.dump(matchup_data, fp)
 
     return scores, team_names, category_pairs, league_name
 

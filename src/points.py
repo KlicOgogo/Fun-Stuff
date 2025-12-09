@@ -76,7 +76,7 @@ def _league_plays_tables(sports, matchup, scores, plays, plays_places, global_re
 
     mean_scores_places = defaultdict(list)
     for m in matchups:
-        matchup_mean_scores = {team: team_mean_scores[m-1] for team, team_mean_scores in mean_scores.items()}
+        matchup_mean_scores = {team: team_mean_scores[m - 1] for team, team_mean_scores in mean_scores.items()}
         matchup_places = utils.common.get_places(matchup_mean_scores, True)
         for team, value in matchup_places.items():
             mean_scores_places[team].append(value)
