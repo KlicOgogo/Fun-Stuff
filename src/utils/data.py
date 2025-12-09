@@ -12,6 +12,8 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
 
+import utils.categories
+
 
 class BrowserManager(object):
     def __init__(self, page_limit, sleep_timeout):
@@ -196,7 +198,7 @@ def _get_matchup_schedule(matchup_text, prev_matchup_number):
     return matchup_number, matchup_date, is_playoffs
 
 
-def _get_matchup_scores(scoreboard_html, team_names, league_id, league_name):
+def _parse_matchup_scores(scoreboard_html, league_id, league_name, team_names):
     matchup_scores = []
     for scoreboard_row in scoreboard_html.findAll('div', {'class': 'Scoreboard__Row'}):
         res = []
@@ -217,7 +219,7 @@ def _get_matchup_scores(scoreboard_html, team_names, league_id, league_name):
     return matchup_scores
 
 
-def _get_team_names(scoreboard_html):
+def _parse_team_names(scoreboard_html):
     team_names = {}
     for scoreboard_row in scoreboard_html.findAll('div', {'class': 'Scoreboard__Row'}):
         for team_data_html in scoreboard_row.findAll('li', 'ScoreboardScoreCell__Item'):
@@ -296,8 +298,7 @@ def group_box_scores(group_settings, group_schedule, matchup, browser, scoreboar
     box_scores = defaultdict(list)
     for league in group_settings['leagues']:
         pairs, team_names, _, league_name = scoreboards[league]
-        for m in range(matchup):
-            current_matchup = m + 1
+        for current_matchup in range(1, matchup + 1):
             is_offline = current_matchup not in online_page_matchups
             matchup_box_scores = None
             if is_offline:
@@ -305,7 +306,7 @@ def group_box_scores(group_settings, group_schedule, matchup, browser, scoreboar
                     league, league_name, team_names, sports, current_matchup)
             if matchup_box_scores is None:
                 matchup_box_scores = _box_scores_online(
-                    league, sports, current_matchup, pairs[m], group_schedule, browser)
+                    league, sports, current_matchup, pairs[current_matchup], group_schedule, browser)
             box_scores[league].append(matchup_box_scores)
 
     return box_scores
@@ -320,7 +321,7 @@ def goalkeeper_games(matchup_box_scores):
     return gk_games if np.sum(list(gk_games.values())) != 0 else None
 
 
-def _matchup_category_pairs(scoreboard_html, league_id, league_name, team_names):
+def _parse_matchup_category_pairs(scoreboard_html, league_id, league_name, team_names):
     pairs = []
     for scoreboard_row in scoreboard_html.findAll('div', {'class': 'Scoreboard__Row'}):
         opponents = scoreboard_row.findAll('li', 'ScoreboardScoreCell__Item')
@@ -419,16 +420,19 @@ def group_schedule(group_settings, browser, use_offline_schedule):
     return schedule
 
 
-def scoreboards(league_id, sports, matchup, browser, online_matchups, is_category_league):
+def load_scoreboards(league_id, sports, matchup, browser, online_matchups, is_category_league):
     today = datetime.datetime.today().date()
     season_start_year = today.year if today.month > 6 else today.year - 1
     season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
     offline_scoreboard_dir = os.path.join(_offline_data_dir, sports, league_id, season_str)
     os.makedirs(offline_scoreboard_dir, exist_ok=True)
 
-    soups = []
     espn_scoreboard_url = f'https://fantasy.espn.com/{sports}/league/scoreboard'
-    for m in range(1, matchup + 1):
+    league_name = None
+    team_names = None
+    scores = {}
+    category_pairs = {}
+    for m in range(matchup, 0, -1):
         html_soup = None
         while html_soup is None or html_soup.find('div', {'class': 'Scoreboard__Row'}) is None:
             matchup_html_path = os.path.join(offline_scoreboard_dir, f'matchup_{m}.html')
@@ -439,16 +443,33 @@ def scoreboards(league_id, sports, matchup, browser, online_matchups, is_categor
                     html_fp.write(str(html_soup))
             else:
                 html_soup = BeautifulSoup(open(matchup_html_path, 'r', encoding='utf-8'), features='html.parser')
-        soups.append(html_soup)
 
-    league_name = soups[-1].findAll('h3')[0].text
-    team_names = _get_team_names(soups[-1])
+        matchup_league_name = html_soup.findAll('h3')[0].text
+        if league_name is None:
+            league_name = matchup_league_name
+        matchup_team_names = _parse_team_names(html_soup)
+        if team_names is None:
+            team_names = matchup_team_names
 
-    scores = []
-    category_pairs = []
-    for m in range(matchup):
-        scores.append(_get_matchup_scores(soups[m], team_names, league_id, league_name))
-        if is_category_league:
-            matchup_category_pairs = _matchup_category_pairs(soups[m], league_id, league_name, team_names)
-            category_pairs.append(matchup_category_pairs)
+        matchup_scores = _parse_matchup_scores(html_soup, league_id, league_name, team_names)
+        scores[m] = matchup_scores
+
+        matchup_category_pairs = _parse_matchup_category_pairs(html_soup, league_id, league_name, team_names) \
+            if is_category_league else None
+        category_pairs[m] = matchup_category_pairs
+
+        matchup_pkl_path = os.path.join(offline_scoreboard_dir, f'matchup_{m}.pkl')
+        with open(matchup_pkl_path, 'wb') as fp:
+            matchup_data = (matchup_scores, matchup_team_names, matchup_category_pairs, matchup_league_name)
+            pickle.dump(matchup_data, fp)
+
     return scores, team_names, category_pairs, league_name
+
+
+def apply_activation_scoreboards(scoreboards, box_scores, group_settings, schedule, is_category_league):
+    if not is_category_league:
+        return scoreboards
+
+    scoreboards_activated = utils.categories.apply_activation_scoreboards(
+        scoreboards, box_scores, group_settings, schedule)
+    return scoreboards_activated

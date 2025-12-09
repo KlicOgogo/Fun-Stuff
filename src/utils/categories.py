@@ -21,10 +21,10 @@ def _get_category_expectation(score_pairs, category, less_win_categories):
     return result
 
 
-def get_each_category_stats(matchup, category_pairs, less_win_categories):
+def get_each_category_stats(matchups, category_pairs, less_win_categories):
     category_places = defaultdict(lambda: defaultdict(list))
     category_win_stats = defaultdict(lambda: defaultdict(list))
-    for m in range(matchup):
+    for m in matchups:
         matchup_pairs, categories = category_pairs[m]
         opponent_dict = utils.common.get_opponent_dict(matchup_pairs)
         stats = get_stats(matchup_pairs)
@@ -136,9 +136,10 @@ def join_stats_and_plays(stats, plays):
     return {team: [plays[team]] + team_stats for team, team_stats in stats.items()}
 
 
-def calculate_category_record(scores):
+def calculate_category_record(scores, matchups):
     category_record = {}
-    for matchup_scores in scores:
+    for m in matchups:
+        matchup_scores = scores[m]
         for scores_pair in matchup_scores:
             for team_key, team_score in scores_pair:
                 if team_key in category_record:
@@ -199,17 +200,17 @@ def apply_activation_scoreboards(scoreboards, box_scores, group_settings, schedu
     scoreboards_activated = {}
     for league, league_scoreboards in scoreboards.items():
         scores, team_names, category_pairs, league_name = league_scoreboards
-        matchup = len(category_pairs)
+        matchup = max(category_pairs.keys())
 
         matchups = np.arange(1, matchup + 1)
         league_box_scores = None if box_scores is None else box_scores[league]
         settings = _activation_settings(group_settings, matchups, schedule)
         stats = _activation_stats(league_box_scores, matchups)
 
-        category_pairs_activated = []
-        for m, (pairs, categories) in enumerate(category_pairs):
-            pairs_activated = _apply_activation_pairs(pairs, m + 1, settings, stats)
-            category_pairs_activated.append((pairs_activated, categories))
+        category_pairs_activated = {}
+        for matchup, (pairs, categories) in category_pairs.items():
+            pairs_activated = _apply_activation_pairs(pairs, matchup, settings, stats)
+            category_pairs_activated[matchup] = (pairs_activated, categories)
 
         scoreboards_activated[league] = scores, team_names, category_pairs_activated, league_name
 

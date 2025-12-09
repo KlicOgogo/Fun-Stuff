@@ -39,9 +39,10 @@ def _process_group(group_settings, schedule, scoring_type, browser, global_resou
 
     current_matchup = matchup_info['current']
     online_matchups = matchup_info['online']
+    is_category_league = scoring_type == 'categories'
     for league in group_settings['leagues']:
-        scoreboards[league] = utils.data.scoreboards(
-            league, sports, current_matchup, browser, online_matchups, scoring_type == 'categories')
+        scoreboards[league] = utils.data.load_scoreboards(
+            league, sports, current_matchup, browser, online_matchups, is_category_league)
         league_names[league] = scoreboards[league][3]
 
     main_league = group_settings['leagues'][0]
@@ -51,8 +52,10 @@ def _process_group(group_settings, schedule, scoring_type, browser, global_resou
         group_settings, schedule, current_matchup, browser, scoreboards, online_matchups)
 
     tables_calculator = _tables_calculators[scoring_type]
+    scoreboards = utils.data.apply_activation_scoreboards(
+        scoreboards, box_scores, group_settings, schedule, is_category_league)
     for matchup in matchup_info['to_process']:
-        tables = tables_calculator(group_settings, schedule, matchup, scoreboards, box_scores, global_resources)
+        tables = tables_calculator(group_settings, matchup, scoreboards, box_scores, global_resources)
 
         active_stats_tables = active_stats.calculate_tables(
             group_settings, matchup, league_names, box_scores, global_resources['descriptions'])

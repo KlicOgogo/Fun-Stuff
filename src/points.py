@@ -15,7 +15,7 @@ _plays_names = {'basketball': 'minutes', 'hockey': 'games'}
 
 
 def _league_scores_tables(matchup, scores, scores_pairs, global_resources):
-    scores_metrics = utils.points.calculate_scores_metrics(scores_pairs[:matchup])
+    scores_metrics = utils.points.calculate_scores_metrics(scores_pairs, matchup)
 
     matchups = np.arange(1, matchup + 1)
     n_last = global_resources['config']['n_last_matchups']
@@ -139,7 +139,7 @@ def _overall_tables(n_leagues, matchup, overall_scores, global_resources):
     return overall_tables
 
 
-def calculate_tables(league_settings, schedule, matchup, scoreboards, box_scores, global_resources):
+def calculate_tables(league_settings, matchup, scoreboards, box_scores, global_resources):
     leagues = league_settings['leagues']
     sports = league_settings['sports']
 
@@ -148,7 +148,8 @@ def calculate_tables(league_settings, schedule, matchup, scoreboards, box_scores
     for league_id in leagues:
         scores_pairs, _, _, league_name = scoreboards[league_id]
         scores = defaultdict(list)
-        for matchup_results in scores_pairs[:matchup]:
+        for m in range(1, matchup + 1):
+            matchup_results = scores_pairs[m]
             for p1, p2 in matchup_results:
                 scores[p1[0]].append(p1[1])
                 scores[p2[0]].append(p2[1])
