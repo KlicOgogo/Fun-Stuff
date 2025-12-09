@@ -252,37 +252,35 @@ def _plays_tables(sports, matchups, league_box_scores, global_resources):
 
 def _cumulative_stats(matchups, scores, category_pairs, tiebreaker):
     cumulative_stats = {
-        'places': defaultdict(list),
-        'opponent_places': defaultdict(list),
         'comparisons': defaultdict(list),
         'opponent_comparisons': defaultdict(list),
         'expected_category_record': defaultdict(list),
         'win_record': defaultdict(Counter),
+        'win_stats': defaultdict(list),
         'expected_win_record': defaultdict(list),
         'comparisons_h2h': defaultdict(lambda: defaultdict(Counter)),
     }
+    cumulative_stats['places'], cumulative_stats['opponent_places'] = utils.categories.cumulative_matchup_table_places(
+        matchups, category_pairs, _less_win_categories)
+
     for m in matchups:
         stats_pairs, categories = category_pairs[m]
         opponent_dict = utils.common.get_opponent_dict(stats_pairs)
-        matchup_places_sum = utils.categories.get_places_sum(stats_pairs, categories, _less_win_categories)
-        matchup_places = utils.common.get_places(matchup_places_sum, False)
-        for team in matchup_places:
-            cumulative_stats['places'][team].append(matchup_places[team])
-            cumulative_stats['opponent_places'][team].append(matchup_places[opponent_dict[team]])
-
         stats = utils.categories.get_stats(stats_pairs)
         comparison_stats = utils.categories.get_comparison_stats(stats, categories, _less_win_categories, tiebreaker)
+
         for team in comparison_stats:
             matchup_comparisons = '-'.join(map(str, comparison_stats[team]))
             cumulative_stats['comparisons'][team].append(matchup_comparisons)
             opponent_matchup_comparisons = '-'.join(map(str, comparison_stats[opponent_dict[team]]))
             cumulative_stats['opponent_comparisons'][team].append(opponent_matchup_comparisons)
 
-        for team in opponent_dict:
+        for team in stats:
             opponent = opponent_dict[team]
             team_result, _ = utils.categories.get_pair_result(
                 stats[team], stats[opponent], categories, _less_win_categories, tiebreaker)
             cumulative_stats['win_record'][team][team_result] += 1
+            cumulative_stats['win_stats'][team].append(team_result)
 
         expected_score = utils.categories.get_expected_score(stats, categories, _less_win_categories)
         tiebreaker_stats = utils.categories.get_tiebreaker_expectation(
@@ -299,6 +297,7 @@ def _cumulative_stats(matchups, scores, category_pairs, tiebreaker):
             cumulative_stats['comparisons_h2h'][opponent][team][opponent_result] += 1
 
     cumulative_stats['category_record'] = utils.categories.calculate_category_record(scores, matchups)
+    cumulative_stats['category_scores'] = utils.categories.get_category_scores(scores, matchups)
     return cumulative_stats
 
 
@@ -334,16 +333,22 @@ def _cumulative_tables(cumulative_stats, matchups, global_resources, is_each_cat
         category_record = cumulative_stats['category_record']
         expected_category_record = cumulative_stats['expected_category_record']
         tables.append([
-            titles['expected_cat'], descriptions['expected_cat'],
-            table.categories.expected_category_stats(
-                category_record, expected_category_record, matchups, _less_win_categories)])
+            titles['expected_each'], descriptions['expected_each'],
+            table.categories.each_category_stats(
+                expected_category_record, category_record, matchups, _less_win_categories)])
+        tables.append([
+            titles['most_categories'], descriptions['most_categories'],
+            table.categories.most_categories_stats(cumulative_stats['win_stats'], None, matchups)])
     else:
         win_record = cumulative_stats['win_record']
         expected_win_record = cumulative_stats['expected_win_record']
         tables.append([
-            titles['expected_win'], descriptions['expected_win'],
-            table.categories.expected_win_stats(win_record, expected_win_record, matchups)])
-
+            titles['expected_most'], descriptions['expected_most'],
+            table.categories.most_categories_stats(expected_win_record, win_record, matchups)])
+        category_scores = cumulative_stats['category_scores']
+        tables.append([
+            titles['each_category'], descriptions['each_category'],
+            table.categories.each_category_stats(category_scores, None, matchups, _less_win_categories)])
     return tables
 
 

@@ -136,6 +136,18 @@ def join_stats_and_plays(stats, plays):
     return {team: [plays[team]] + team_stats for team, team_stats in stats.items()}
 
 
+def get_category_scores(scores, matchups):
+    category_scores = defaultdict(list)
+    for m in matchups:
+        matchup_scores = scores[m]
+        for scores_pair in matchup_scores:
+            for team_key, team_score in scores_pair:
+                score = np.array(list(map(float, team_score.split('-'))))
+                category_scores[team_key].append(score)
+
+    return category_scores
+
+
 def calculate_category_record(scores, matchups):
     category_record = {}
     for m in matchups:
@@ -215,3 +227,22 @@ def apply_activation_scoreboards(scoreboards, box_scores, group_settings, schedu
         scoreboards_activated[league] = scores, team_names, category_pairs_activated, league_name
 
     return scoreboards_activated
+
+
+def cumulative_matchup_table_places(matchups, category_pairs, less_win_categories):
+    places = defaultdict(list)
+    opponent_places = defaultdict(list)
+    for m in matchups:
+        stats_pairs, categories = category_pairs[m]
+        opponent_dict = utils.common.get_opponent_dict(stats_pairs)
+        matchup_places_sum = get_places_sum(stats_pairs, categories, less_win_categories)
+        matchup_places = utils.common.get_places(matchup_places_sum, False)
+
+        for team, matchup_team_place in matchup_places.items():
+            places[team].append(matchup_team_place)
+
+            opponent = opponent_dict[team]
+            matchup_opponent_place = matchup_places[opponent]
+            opponent_places[team].append(matchup_opponent_place)
+
+    return places, opponent_places

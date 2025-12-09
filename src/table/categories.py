@@ -113,12 +113,17 @@ def pairwise_comparisons(comparisons_data, matchups, is_opponent, n_last, less_w
     return styler.to_html()
 
 
-def expected_category_stats(data, expected_data, matchups, less_win_categories):
-    df_data = copy.deepcopy(expected_data)
+def each_category_stats(stats, total_comparison, matchups, less_win_categories):
+    df_data = copy.deepcopy(stats)
     for team in df_data:
         team_stats_array = np.vstack(df_data[team])
         df_data[team].append(team_stats_array.sum(axis=0))
-        df_data[team].append(data[team])
+
+        if total_comparison is None:
+            df_data[team].append(np.array([0.0, 0.0, 0.0]))
+        else:
+            df_data[team].append(total_comparison[team])
+
         df_data[team].extend(map(lambda x: np.round(x, 1), df_data[team][-1] - df_data[team][-2]))
         for i in range(len(df_data[team]) - 3):
             df_data[team][i] = '-'.join(map(lambda x: f'{np.round(x, 1):g}', df_data[team][i][:3]))
@@ -128,41 +133,66 @@ def expected_category_stats(data, expected_data, matchups, less_win_categories):
     df = pd.DataFrame(list(df_data.values()), index=df_data.keys(),
                       columns=[*matchups, 'Total', 'Real', 'WD', 'LD', 'DD  ', 'Diff'])
     df = df_teams.merge(df, how='outer', left_index=True, right_index=True)
-    df = df.iloc[np.lexsort((-df['WD'], -df['Diff']))]
+    if total_comparison is None:
+        df = df.iloc[np.lexsort((df['WD'], df['Diff']))]
+        df = df.drop(columns=['Real', 'WD', 'LD', 'DD  ', 'Diff'])
+    else:
+        df = df.iloc[np.lexsort((-df['WD'], -df['Diff']))]
     df = add_position_column(df)
     best, worst = _get_extremums(df, less_win_categories, is_opponent=False)
     extremum_lambda = lambda s: style.extremum(s, best[s.name], worst[s.name])
     table_attributes = style.calculate_table_attributes(isSortable=True, hasPositionColumn=True)
-    styler = df.style.format('{:g}', subset=pd.IndexSlice[list(df_data.keys()), ['DD  ', 'WD', 'LD', 'Diff']]).\
-        set_table_attributes(table_attributes).hide().\
-        map(style.value, subset=pd.IndexSlice[list(df_data.keys()), ['Diff']]).\
-        apply(extremum_lambda, subset=pd.IndexSlice[df.index, [*matchups, 'Total', 'Real']])
+
+    styler = df.style
+    if total_comparison is not None:
+        styler = styler.format('{:g}', subset=pd.IndexSlice[list(df_data.keys()), ['DD  ', 'WD', 'LD', 'Diff']])
+    styler = styler.set_table_attributes(table_attributes).hide()
+    if total_comparison is not None:
+        styler = styler.map(style.value, subset=pd.IndexSlice[list(df_data.keys()), ['Diff']])
+    extremum_cols = [*matchups, 'Total'] if total_comparison is None else [*matchups, 'Total', 'Real']
+    styler = styler.apply(extremum_lambda, subset=pd.IndexSlice[df.index, extremum_cols])
     return styler.to_html()
 
 
-def expected_win_stats(data, expected_data, matchups):
-    df_data = copy.deepcopy(expected_data)
+def most_categories_stats(stats, total_comparison, matchups):
+    df_data = copy.deepcopy(stats)
     res_order = ['W', 'L', 'D']
     for team in df_data:
         expected_record = Counter(df_data[team])
         expected_record_str = '-'.join(map(lambda num: f'{num:g}', [expected_record[res] for res in res_order]))
         df_data[team].append(expected_record_str)
-        record_str = '-'.join(map(lambda num: f'{num:g}', [data[team][res] for res in res_order]))
+
+        if total_comparison is None:
+            record_str = '0-0-0'
+        else:
+            record_str = '-'.join(map(lambda num: f'{num:g}', [total_comparison[team][res] for res in res_order]))
+
         df_data[team].append(record_str)
-        df_data[team].extend([data[team][res] - expected_record[res] for res in res_order])
+        if total_comparison is None:
+            df_data[team].extend([0 - expected_record[res] for res in res_order])
+        else:
+            df_data[team].extend([total_comparison[team][res] - expected_record[res] for res in res_order])
         df_data[team].append(df_data[team][-3] + 0.5 * df_data[team][-1])
 
     df_teams = pd.DataFrame(list(map(itemgetter(0), df_data.keys())), index=df_data.keys(), columns=['Team'])
     df = pd.DataFrame(list(df_data.values()), index=df_data.keys(),
                       columns=[*matchups, 'Total', 'Real', 'WD', 'LD', 'DD  ', 'Diff'])
     df = df_teams.merge(df, how='outer', left_index=True, right_index=True)
-    df = df.iloc[np.lexsort((-df['WD'], -df['Diff']))]
+    if total_comparison is None:
+        df = df.iloc[np.lexsort((df['WD'], df['Diff']))]
+        df = df.drop(columns=['Real', 'WD', 'LD', 'DD  ', 'Diff'])
+    else:
+        df = df.iloc[np.lexsort((-df['WD'], -df['Diff']))]
     df = add_position_column(df)
     table_attributes = style.calculate_table_attributes(isSortable=True, hasPositionColumn=True)
-    styler = df.style.format('{:g}', subset=pd.IndexSlice[list(df_data.keys()), ['Diff']]).\
-        set_table_attributes(table_attributes).hide().\
-        map(style.pair_result, subset=matchups).\
-        map(style.value, subset=pd.IndexSlice[list(df_data.keys()), ['Diff']])
+
+    styler = df.style
+    if total_comparison is not None:
+        styler = styler.format('{:g}', subset=pd.IndexSlice[list(df_data.keys()), ['Diff']])
+    styler = styler.set_table_attributes(table_attributes).hide().\
+        map(style.pair_result, subset=matchups)
+    if total_comparison is not None:
+        styler = styler.map(style.value, subset=pd.IndexSlice[list(df_data.keys()), ['Diff']])
     return styler.to_html()
 
 
