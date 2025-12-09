@@ -115,10 +115,10 @@ def totals_by_players(team_stats, category_short, sports):
     return stats_summarized
 
 
-def stats_by_team(matchup, league_box_scores, sports):
+def stats_by_team(matchups, league_box_scores, sports):
     data_by_team = defaultdict(lambda: defaultdict(list))
     categories_info = defaultdict(dict)
-    for m in range(matchup):
+    for m in matchups:
         matchup_active_stats = league_box_scores[m]
         for team_key, team_matchup_active_stats in matchup_active_stats.items():
             categories_data, stats_data, _ = team_matchup_active_stats

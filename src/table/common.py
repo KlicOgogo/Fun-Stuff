@@ -43,7 +43,7 @@ def h2h(h2h_comparisons):
         team_data.append(np.round(h2h_powers[team][0] / np.sum(h2h_sums[team]), 2))
         df_data.append(team_data)
 
-    df = pd.DataFrame(df_data, columns=['Team', *np.arange(1, len(df_data)+1), 'W  ', 'L', 'D', '%'])
+    df = pd.DataFrame(df_data, columns=['Team', *np.arange(1, len(df_data) + 1), 'W  ', 'L', 'D', '%'])
     df = add_position_column(df)
     table_attributes = style.calculate_table_attributes(isSortable=False, hasPositionColumn=True)
     styler = df.style.format({'%': '{:g}'}).set_table_attributes(table_attributes).hide().\
@@ -87,7 +87,7 @@ def scores(scores_data, matchups, opp_flag, n_last):
     flags = list(reversed(flags)) if opp_flag else flags
     masks = [[] for _ in flags]
     for m in matchups:
-        value_row = np.array([df_data[team][m-1] for team in sorted(df_data)])
+        value_row = np.array([df_data[team][m - 1] for team in sorted(df_data)])
         for mask_array, flag_func in zip(masks, flags):
             mask_array.append(flag_func(value_row, value_row))
     counts = [np.array(mask_array).sum(axis=0) for mask_array in masks]

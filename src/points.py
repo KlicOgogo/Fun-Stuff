@@ -14,10 +14,9 @@ _plays_per_game = {'basketball': 30, 'hockey': 1}
 _plays_names = {'basketball': 'minutes', 'hockey': 'games'}
 
 
-def _league_scores_tables(matchup, scores, scores_pairs, global_resources):
-    scores_metrics = utils.points.calculate_scores_metrics(scores_pairs, matchup)
+def _league_scores_tables(matchups, scores, scores_pairs, global_resources):
+    scores_metrics = utils.points.calculate_scores_metrics(scores_pairs, matchups)
 
-    matchups = np.arange(1, matchup + 1)
     n_last = global_resources['config']['n_last_matchups']
     titles = global_resources['titles']
     descriptions = global_resources['descriptions']
@@ -50,13 +49,12 @@ def _league_scores_tables(matchup, scores, scores_pairs, global_resources):
     return tables
 
 
-def _league_plays_tables(sports, matchup, scores, plays, plays_places, global_resources):
+def _league_plays_tables(sports, matchups, scores, plays, plays_places, global_resources):
     n_last = global_resources['config']['n_last_matchups']
     titles = global_resources['titles']
     descriptions = global_resources['descriptions']
 
     plays_name = _plays_names[sports]
-    matchups = np.arange(1, matchup + 1)
     tables = []
     tables.append([
         titles[plays_name], descriptions[plays_name],
@@ -87,7 +85,7 @@ def _league_plays_tables(sports, matchup, scores, plays, plays_places, global_re
     return tables
 
 
-def _overall_tables(n_leagues, matchup, overall_scores, global_resources):
+def _overall_tables(n_leagues, matchups, overall_scores, global_resources):
     n_last = global_resources['config']['n_last_matchups']
     titles = global_resources['titles']
     descriptions = global_resources['descriptions']
@@ -95,14 +93,14 @@ def _overall_tables(n_leagues, matchup, overall_scores, global_resources):
     overall_tables = []
     if n_leagues > 1:
         overall_places = defaultdict(list)
-        for i in range(matchup):
-            matchup_overall_scores = {team: overall_scores[team][i] for team in overall_scores}
+        for m in matchups:
+            matchup_overall_scores = {team: overall_scores[team][m - 1] for team in overall_scores}
             matchup_overall_places = utils.common.get_places(matchup_overall_scores, True)
             for team in matchup_overall_places:
                 overall_places[team].append(matchup_overall_places[team])
         overall_tables.append([
             titles['places_overall'], descriptions['places_overall'],
-            table.common.places(overall_places, np.arange(1, matchup + 1), False, True, n_last)])
+            table.common.places(overall_places, matchups, False, True, n_last)])
 
     n_top = int(len(overall_scores) / n_leagues)
     top_common_cols = ['Team', 'Score', 'League']
@@ -145,17 +143,18 @@ def calculate_tables(league_settings, matchup, scoreboards, box_scores, global_r
 
     overall_scores = defaultdict(list)
     tables = []
+    matchups = np.arange(1, matchup + 1)
     for league_id in leagues:
         scores_pairs, _, _, league_name = scoreboards[league_id]
         scores = defaultdict(list)
-        for m in range(1, matchup + 1):
+        for m in matchups:
             matchup_results = scores_pairs[m]
             for p1, p2 in matchup_results:
                 scores[p1[0]].append(p1[1])
                 scores[p2[0]].append(p2[1])
         overall_scores.update(scores)
 
-        scores_tables = _league_scores_tables(matchup, scores, scores_pairs, global_resources)
+        scores_tables = _league_scores_tables(matchups, scores, scores_pairs, global_resources)
         league_link = f'https://fantasy.espn.com/{sports}/league?leagueId={league_id}'
         if not league_settings['is_full_support']:
             tables.append([league_name, league_link, scores_tables])
@@ -163,7 +162,7 @@ def calculate_tables(league_settings, matchup, scoreboards, box_scores, global_r
 
         plays = defaultdict(list)
         plays_places = defaultdict(list)
-        for m in range(matchup):
+        for m in matchups:
             matchup_box_scores = box_scores[league_id][m]
             matchup_plays = _plays_getters[sports](matchup_box_scores)
             if not matchup_plays:
@@ -175,11 +174,11 @@ def calculate_tables(league_settings, matchup, scoreboards, box_scores, global_r
             for team, value in matchup_places.items():
                 plays_places[team].append(value)
 
-        plays_tables = _league_plays_tables(sports, matchup, scores, plays, plays_places, global_resources)
+        plays_tables = _league_plays_tables(sports, matchups, scores, plays, plays_places, global_resources)
         league_tables = scores_tables + plays_tables
         tables.append([league_name, league_link, league_tables])
 
-    overall_tables = _overall_tables(len(leagues), matchup, overall_scores, global_resources)
+    overall_tables = _overall_tables(len(leagues), matchups, overall_scores, global_resources)
     return {
         'results': {'leagues': tables, 'overall_tables': overall_tables}
     }

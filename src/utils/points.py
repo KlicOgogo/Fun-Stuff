@@ -39,7 +39,7 @@ def calculate_pairwise_h2h(scores):
     return pairwise_h2h
 
 
-def calculate_scores_metrics(scores_pairs, matchup):
+def calculate_scores_metrics(scores_pairs, matchups):
     metrics = {
         'opponent_scores': defaultdict(list),
         'luck': defaultdict(list),
@@ -49,13 +49,13 @@ def calculate_scores_metrics(scores_pairs, matchup):
     }
 
     opponent_scores = metrics['opponent_scores']
-    for m in range(1, matchup + 1):
+    for m in matchups:
         matchup_results = scores_pairs[m]
         for p1, p2 in matchup_results:
             opponent_scores[p1[0]].append(p2[1])
             opponent_scores[p2[0]].append(p1[1])
 
-    for m in range(1, matchup + 1):
+    for m in matchups:
         matchup_results = scores_pairs[m]
         matchup_scores = {team: score for pair in matchup_results for team, score in pair}
         matchup_places = utils.common.get_places(matchup_scores, True)

@@ -295,7 +295,7 @@ def group_box_scores(group_settings, group_schedule, matchup, browser, scoreboar
         return None
 
     sports = group_settings['sports']
-    box_scores = defaultdict(list)
+    box_scores = defaultdict(dict)
     for league in group_settings['leagues']:
         pairs, team_names, _, league_name = scoreboards[league]
         for current_matchup in range(1, matchup + 1):
@@ -307,7 +307,7 @@ def group_box_scores(group_settings, group_schedule, matchup, browser, scoreboar
             if matchup_box_scores is None:
                 matchup_box_scores = _box_scores_online(
                     league, sports, current_matchup, pairs[current_matchup], group_schedule, browser)
-            box_scores[league].append(matchup_box_scores)
+            box_scores[league][current_matchup] = matchup_box_scores
 
     return box_scores
 

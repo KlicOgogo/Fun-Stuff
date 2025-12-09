@@ -192,7 +192,7 @@ def _activation_stats(league_box_scores, matchups):
         return None
 
     return {
-        'goalkeeper_games': {m: utils.data.goalkeeper_games(league_box_scores[m - 1]) for m in matchups}
+        'goalkeeper_games': {m: utils.data.goalkeeper_games(league_box_scores[m]) for m in matchups}
     }
 
 
@@ -202,7 +202,7 @@ def apply_activation_scoreboards(scoreboards, box_scores, group_settings, schedu
         scores, team_names, category_pairs, league_name = league_scoreboards
         matchup = max(category_pairs.keys())
 
-        matchups = np.arange(1, matchup + 1)
+        matchups = range(1, matchup + 1)
         league_box_scores = None if box_scores is None else box_scores[league]
         settings = _activation_settings(group_settings, matchups, schedule)
         stats = _activation_stats(league_box_scores, matchups)

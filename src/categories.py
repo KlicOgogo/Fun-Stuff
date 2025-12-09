@@ -112,7 +112,7 @@ def _matchup_table(league, group_settings, matchup, scoreboards, league_box_scor
 
     places_data = utils.categories.get_places_data(stats, categories, _less_win_categories)
     places_sum = utils.categories.get_places_sum(matchup_pairs, categories, _less_win_categories)
-    plays = None if league_box_scores is None else _plays_getters[sports](league_box_scores[matchup - 1])
+    plays = None if league_box_scores is None else _plays_getters[sports](league_box_scores[matchup])
     plays_places = None if plays is None else utils.common.get_places(plays, reverse=True)
     stats_with_plays = utils.categories.join_stats_and_plays(stats, plays)
     places_with_plays = utils.categories.join_stats_and_plays(places_data, plays_places)
@@ -151,7 +151,7 @@ def _overall_stats(group_settings, matchup, scoreboards, box_scores):
         for m in range(1, matchup + 1):
             stats_pairs, categories = category_pairs[m]
             overall_stats_pairs[m].extend(stats_pairs)
-        plays = None if box_scores is None else _plays_getters[sports](box_scores[league][matchup - 1])
+        plays = None if box_scores is None else _plays_getters[sports](box_scores[league][matchup])
         overall_plays = overall_plays if plays is None else overall_plays | plays
 
     return {
@@ -221,7 +221,7 @@ def _plays_tables(sports, matchups, league_box_scores, global_resources):
     plays = defaultdict(list)
     plays_places = defaultdict(list)
     for matchup in matchups:
-        matchup_box_scores_data = league_box_scores[matchup - 1]
+        matchup_box_scores_data = league_box_scores[matchup]
         plays_matchup = _plays_getters[sports](matchup_box_scores_data)
         if not plays_matchup:
             raise Exception('Matchup plays for categories not found.')
@@ -347,11 +347,11 @@ def _cumulative_tables(cumulative_stats, matchups, global_resources, is_each_cat
     return tables
 
 
-def _rotisserie_tables(matchup, league_box_scores, sports, categories, global_resources):
+def _rotisserie_tables(matchups, league_box_scores, sports, categories, global_resources):
     if league_box_scores is None:
         return []
 
-    stats_by_team, categories_info = utils.active_stats.stats_by_team(matchup, league_box_scores, sports)
+    stats_by_team, categories_info = utils.active_stats.stats_by_team(matchups, league_box_scores, sports)
     totals_by_team = defaultdict(dict)
     for team_key, team_stats in stats_by_team.items():
         for group, group_team_stats in team_stats.items():
@@ -415,7 +415,7 @@ def _group_tables(group_settings, matchup, scoreboards, box_scores, global_resou
 
         scores, _, category_pairs, league_name = scoreboards[league]
         _, categories = category_pairs[matchup]
-        roto_tables = _rotisserie_tables(matchup, league_box_scores, sports, categories, global_resources)
+        roto_tables = _rotisserie_tables(matchups, league_box_scores, sports, categories, global_resources)
         cumulative_stats = _cumulative_stats(matchups, scores, category_pairs, tiebreaker)
         cumulative_tables = _cumulative_tables(cumulative_stats, matchups, global_resources, is_each_category)
         plays_tables = _plays_tables(sports, matchups, league_box_scores, global_resources)
@@ -432,7 +432,7 @@ def calculate_tables(group_settings, matchup, scoreboards, box_scores, global_re
     analytics_tables = _analytics_tables(group_settings, matchup, scoreboards, global_resources)
 
     overall_tables = []
-    if len(group_settings['leagues']) > 0:
+    if len(group_settings['leagues']) > 1:
         overall_stats = _overall_stats(group_settings, matchup, scoreboards, box_scores)
         overall_tables = _overall_tables(group_settings, matchup, overall_stats, global_resources)
 
