@@ -263,7 +263,6 @@ def save_tables(group_settings, matchup, schedule, global_config, report_type, p
     season_reports_dir = os.path.join(repo_name, dir_name, sports, main_league, season_str)
     previous_reports = _get_previous_reports(season_reports_dir, matchup, schedule, github)
     template_params = {
-        'use_viewport': report_type == 'active stats',
         'header': f'Fantasy Fun Stuff ({report_type})',
         'index': main_index_url,
         'matchup': matchup,

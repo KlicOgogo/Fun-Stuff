@@ -123,23 +123,31 @@
             overflow-x: auto;
         }
 
-        {%- if use_viewport %}
-            @media (max-width: 768px) {
-                .collapsible {
-                    width: 60%;
-                }
-                .text-box {
-                    width: 80%;
-                }
+        .centered-list {
+            list-style-type: none;
+            padding: 0;
+            text-align: center;
+        }
+        .centered-list li {
+            margin: 3px 0;
+        }
+        .centered-list a {
+            text-decoration: none;
+        }
+
+        @media (max-width: 768px) {
+            .collapsible {
+                width: 72%;
             }
-        {%- endif %}
+            .text-box {
+                width: 96%;
+            }
+        }
     </style>
 
     <head>
         <meta charset="UTF-8">
-        {%- if use_viewport %}
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        {%- endif %}
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="icon" type="image/png" href="https://klicogogo.github.io/res/favicon.ico"/>
     </head>
     <!-- Google tag (gtag.js) -->
@@ -189,10 +197,10 @@
 
         {%- if previous_reports|length > 0 %}
             <h2 class="list-heading">Previous reports</h2>
-            <ul style="list-style-type:none;">
-            {%- for matchup_number, link_data in previous_reports|dictsort(reverse=true) %}
-                <li><a href="{{ link_data[1] }}" style="text-decoration:none;">{{ link_data[0] }}</a></li>
-            {%- endfor %}
+            <ul class="centered-list">
+                {%- for matchup_number, link_data in previous_reports|dictsort(reverse=true) %}
+                    <li><a href="{{ link_data[1] }}">{{ link_data[0] }}</a></li>
+                {%- endfor %}
             </ul>
         {%- endif %}
 
