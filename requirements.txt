@@ -5,3 +5,4 @@ numpy
 pandas
 selenium
 python-telegram-bot==13.11
+pytz
