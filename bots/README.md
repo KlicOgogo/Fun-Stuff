@@ -66,7 +66,7 @@ Dahlin ex-Jesus traded 15th, 16th Round Draft Pick (239th, 242nd Overall) to Med
 
 Чтобы запустить бота, нужно выполнить следующие шаги:
 
-0. Скачать код.
+0. Скачать код. Например, `git clone https://github.com/KlicOgogo/Fun-Stuff.git` или скачать архив.
 1. Установить Python (подойдёт 3.9): https://www.python.org/downloads/release/python-390/. Для Windows качается и устанавливается как любая другая программа.
 2. Установить нужные библиотеки Python. Для этого нужно открыть командную строку в папке с ботом и выполнить команду:
    ```bash
@@ -159,3 +159,7 @@ Dahlin ex-Jesus traded 15th, 16th Round Draft Pick (239th, 242nd Overall) to Med
 - `1` — номер пика
 - `.` — разделитель
 - `Royce O'Neale` — имя и фамилия (обязательно ровно из двух слов) игрока. Возможно использование `Jr.`, `Sr.`, `III`, `IV`.
+
+### Запуск бота
+
+Аналогично боту espn_trades_bot, только токен нужно вставить в json-файл с настройками для лиги.
