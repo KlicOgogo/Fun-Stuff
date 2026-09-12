@@ -62,7 +62,8 @@ def _process_group(group_settings, schedule, scoring_type, browser, global_resou
         tables.update(active_stats_tables)
 
         for report_type, type_tables in tables.items():
-            title = f'{main_league_name} ({sports}). Matchup {matchup} {report_type}'
+            current_season_str = utils.common.calculate_current_season_str()
+            title = f'{main_league_name} ({sports}) {current_season_str}. Matchup {matchup} {report_type}'
             template_params = {'title': title}
             template_params.update(type_tables)
             utils.common.save_tables(group_settings, matchup, schedule, global_config, report_type, template_params)

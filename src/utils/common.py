@@ -19,6 +19,25 @@ _sports_to_display = {
 _global_resources_keys = ['category_names', 'config', 'descriptions', 'titles']
 
 
+def get_today():
+    # return datetime.date(2025, 12, 1)
+    return datetime.datetime.today().date()
+
+
+def calculate_current_season_str():
+    today = get_today()
+    season_start_year = today.year if today.month > 6 else today.year - 1
+    season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
+    return season_str
+
+
+def calculate_previous_season_str():
+    today = get_today()
+    season_end_year = today.year if today.month > 6 else today.year - 1
+    prev_season_str = f'{season_end_year - 1}-{str(season_end_year)[-2:]}'
+    return prev_season_str
+
+
 def load_global_resources():
     global_resources = {}
     for key in _global_resources_keys:
@@ -29,8 +48,7 @@ def load_global_resources():
 
 
 def find_proper_matchup(schedule):
-    today = datetime.datetime.today().date()
-    # today = datetime.date(2025, 12, 1)
+    today = get_today()
     four_days_ago = today - datetime.timedelta(days=4)
     eleven_days_ago = four_days_ago - datetime.timedelta(days=7)
     for index, matchup_number in enumerate(sorted(schedule)):
@@ -144,10 +162,8 @@ def save_archive(global_config, league_names):
 
 def save_homepage(global_config, index_config, league_names):
     sports_indexes = defaultdict(lambda: defaultdict(list))
-    today = datetime.datetime.today().date()
-    season_start_year = today.year if today.month > 6 else today.year - 1
-    season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
-    prev_season_str = f'{season_start_year - 1}-{str(season_start_year)[-2:]}'
+    season_str = calculate_current_season_str()
+    prev_season_str = calculate_previous_season_str()
 
     main_github = global_config['main_github']
     main_repo = global_config['main_repo']
@@ -275,10 +291,7 @@ def save_league_index(league_name, group_settings, global_config):
 
 
 def save_tables(group_settings, matchup, schedule, global_config, report_type, params):
-    today = datetime.datetime.today().date()
-    season_start_year = today.year if today.month > 6 else today.year - 1
-    season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
-
+    season_str = calculate_current_season_str()
     main_github = global_config['main_github']
     main_repo = global_config['main_repo']
     main_index_url = f'https://{main_github}.github.io/{main_repo}/homepage.html'

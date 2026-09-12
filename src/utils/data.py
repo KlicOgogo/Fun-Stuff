@@ -13,6 +13,7 @@ from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
 
 import utils.categories
+from utils.common import get_today, calculate_current_season_str
 
 
 class BrowserManager(object):
@@ -167,7 +168,7 @@ def _get_matchup_date(matchup_text):
     start_components = start_str.split(' ')
     start_month = months[start_components[0].lower()]
     start_day = int(start_components[1])
-    today = datetime.datetime.today().date()
+    today = get_today()
     season_start_year = today.year if today.month > 6 else today.year - 1
     start_year = season_start_year if start_month > 6 else season_start_year + 1
     end_components = end_str.split(' ')
@@ -231,9 +232,7 @@ def _parse_team_names(scoreboard_html):
 
 
 def _box_scores_offline(league_id, league_name, team_names, sports, matchup):
-    today = datetime.datetime.today().date()
-    season_start_year = today.year if today.month > 6 else today.year - 1
-    season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
+    season_str = calculate_current_season_str()
     offline_box_scores_dir = os.path.join(_offline_data_dir, sports, league_id, season_str)
 
     offline_data_path = os.path.join(offline_box_scores_dir, f'box_scores_{matchup}.pkl')
@@ -250,7 +249,7 @@ def _box_scores_offline(league_id, league_name, team_names, sports, matchup):
 
 
 def _box_scores_online(league_id, sports, matchup, pairs, group_schedule, browser):
-    today = datetime.datetime.today().date()
+    today = get_today()
     season_start_year = today.year if today.month > 6 else today.year - 1
 
     scoring_period_id = (group_schedule[matchup][0][0] - group_schedule[1][0][0]).days + 1
@@ -281,7 +280,7 @@ def _box_scores_online(league_id, sports, matchup, pairs, group_schedule, browse
             box_scores_totals = _parse_box_scores_totals(tables)
             box_scores_stats[player] = (box_scores_titles, box_scores_data, box_scores_totals)
 
-    season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
+    season_str = calculate_current_season_str()
     offline_box_scores_dir = os.path.join(_offline_data_dir, sports, league_id, season_str)
     os.makedirs(offline_box_scores_dir, exist_ok=True)
     offline_data_path = os.path.join(offline_box_scores_dir, f'box_scores_{matchup}.pkl')
@@ -371,9 +370,7 @@ def player_games(matchup_box_scores):
 
 
 def _schedule(league_id, sports, is_playoffs_support, is_offline, browser):
-    today = datetime.datetime.today().date()
-    season_start_year = today.year if today.month > 6 else today.year - 1
-    season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
+    season_str = calculate_current_season_str()
     offline_data_dir = os.path.join(_offline_data_dir, sports, league_id, season_str)
     os.makedirs(offline_data_dir, exist_ok=True)
 
@@ -453,9 +450,7 @@ def _update_matchup_category_pairs(matchup_category_pairs, league_id, league_nam
 
 
 def load_scoreboards(league_id, sports, matchup, browser, online_matchups, is_category_league):
-    today = datetime.datetime.today().date()
-    season_start_year = today.year if today.month > 6 else today.year - 1
-    season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
+    season_str = calculate_current_season_str()
     offline_scoreboard_dir = os.path.join(_offline_data_dir, sports, league_id, season_str)
     os.makedirs(offline_scoreboard_dir, exist_ok=True)
 
