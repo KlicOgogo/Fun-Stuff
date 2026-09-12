@@ -71,6 +71,9 @@ def _get_previous_reports(index_relative_path, matchup, schedule, github):
 
 def _get_season_reports(season_relative_path, github):
     reports_dir = os.path.join(_repo_root_dir, '..', season_relative_path)
+    if not os.path.isdir(reports_dir):
+        return None, None, None
+
     matchups = []
     for item in os.listdir(reports_dir):
         found = re.findall(r'matchup_(\d+)\.html', item)
@@ -79,12 +82,15 @@ def _get_season_reports(season_relative_path, github):
 
     season_reports = {}
     latest_report_url = None
+    latest_report_number = None
     for m in sorted(matchups, reverse=True):
         link = f'https://{github}.github.io/{season_relative_path}/matchup_{m}.html'
         season_reports[f'Matchup {m}'] = link
         if latest_report_url is None:
             latest_report_url = link
-    return season_reports, latest_report_url
+        if latest_report_number is None:
+            latest_report_number = m
+    return season_reports, latest_report_url, latest_report_number
 
 
 def get_opponent_dict(scores_pairs):
@@ -141,10 +147,16 @@ def save_homepage(global_config, index_config, league_names):
     today = datetime.datetime.today().date()
     season_start_year = today.year if today.month > 6 else today.year - 1
     season_str = f'{season_start_year}-{str(season_start_year + 1)[-2:]}'
+    prev_season_str = f'{season_start_year - 1}-{str(season_start_year)[-2:]}'
 
+    main_github = global_config['main_github']
+    main_repo = global_config['main_repo']
     for group_settings in index_config:
         main_league = group_settings['leagues'][0]
         sports = group_settings['sports']
+        sports_display = _sports_to_display[sports]
+        main_league_name = league_names[sports][main_league]
+        schedule_insights_matchup = None
 
         for report_type in global_config['report_types']:
             github = global_config[report_type]['github']
@@ -152,24 +164,40 @@ def save_homepage(global_config, index_config, league_names):
             reports_dir_name = global_config[report_type]['dir_name']
 
             season_relative_path = os.path.join(reports_repo_name, reports_dir_name, sports, main_league, season_str)
+            prev_season_relative_path = os.path.join(
+                reports_repo_name, reports_dir_name, sports, main_league, prev_season_str)
             reports_dir = os.path.join(_repo_root_dir, '..', season_relative_path)
-            if not os.path.isdir(reports_dir):
+            prev_reports_dir = os.path.join(_repo_root_dir, '..', prev_season_relative_path)
+            if not os.path.isdir(reports_dir) and not os.path.isdir(prev_reports_dir):
                 continue
-            _, latest_report_link = _get_season_reports(season_relative_path, github)
 
-            main_league_name = league_names[sports][main_league]
+            _, latest_report_link, latest_report_number = _get_season_reports(season_relative_path, github)
+            if not latest_report_link:
+                _, latest_report_link, _ = _get_season_reports(prev_season_relative_path, github)
+                latest_report_number = 0
+
+            if schedule_insights_matchup is None:
+                schedule_insights_matchup = latest_report_number + 1
+
             reports_type_name = report_type.capitalize()
-            sports_display = _sports_to_display[sports]
             sports_indexes[sports_display][main_league_name].append([reports_type_name, latest_report_link])
 
-    github = global_config['main_github']
-    repo = global_config['main_repo']
+        if schedule_insights_matchup is None:
+            continue
+
+        schedule_insights_filename = f'matchup_{schedule_insights_matchup}.html'
+        schedule_insights_relative_path = os.path.join('schedule', main_league, schedule_insights_filename)
+        schedule_insight_report_path = os.path.join(_repo_root_dir, '..', main_repo, schedule_insights_relative_path)
+        if os.path.isfile(schedule_insight_report_path):
+            schedule_insights_link = f'https://{main_github}.github.io/{main_repo}/{schedule_insights_relative_path}'
+            sports_indexes[sports_display][main_league_name].append(['Schedule insights', schedule_insights_link])
+
     template_params = {
         'title': 'Fantasy Fun Stuff',
         'indexes': sports_indexes,
-        'archive_url': f'https://{github}.github.io/{repo}/archive.html',
+        'archive_url': f'https://{main_github}.github.io/{main_repo}/archive.html',
     }
-    homepage_path = os.path.join(_repo_root_dir, '..', repo, 'homepage.html')
+    homepage_path = os.path.join(_repo_root_dir, '..', main_repo, 'homepage.html')
     _save_html('index', template_params, homepage_path)
 
 
@@ -230,7 +258,7 @@ def save_league_index(league_name, group_settings, global_config):
         dirs = [item for item in os.listdir(home_page_dir) if os.path.isdir(os.path.join(home_page_dir, item))]
         for season_str in sorted(dirs, reverse=True):
             season_relative_path = os.path.join(index_relative_path, season_str)
-            season_reports, _ = _get_season_reports(season_relative_path, github)
+            season_reports, _, _ = _get_season_reports(season_relative_path, github)
             indexes_by_year.append([season_str, season_reports])
 
         template_params = {
