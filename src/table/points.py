@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from table import style
-from table.common import add_position_column
+from table.common import add_position_column, to_html_stable
 
 
 def luck_score(luck, matchups, opp_flag, n_last):
@@ -34,7 +34,7 @@ def luck_score(luck, matchups, opp_flag, n_last):
     styler = df.style.format({c: '{:g}' for c in set(cols) - {'Team'}}).\
         set_table_attributes(table_attributes).hide().\
         map(style.opponent_luck_score if opp_flag else style.value, subset=matchups)
-    return styler.to_html()
+    return to_html_stable(styler)
 
 
 def top(data, n_top, cols, drop_league_col_flag):
@@ -46,4 +46,4 @@ def top(data, n_top, cols, drop_league_col_flag):
     table_attributes = style.calculate_table_attributes(isSortable=False, hasPositionColumn=True)
     styler = df.style.format({c: '{:g}' for c in set(cols) - {'Team', 'League'}}).\
         set_table_attributes(table_attributes).hide()
-    return styler.to_html()
+    return to_html_stable(styler)

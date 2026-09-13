@@ -1,11 +1,19 @@
 from collections import Counter, defaultdict
 import copy
+import hashlib
 from operator import itemgetter
 
 import numpy as np
 import pandas as pd
 
 from table import flag, style
+
+
+def to_html_stable(styler, **kwargs):
+    data = styler.data.to_csv(index=False).encode("utf-8")
+    hash = hashlib.md5(data).hexdigest()[:8]
+    styler.set_uuid(hash)
+    return styler.to_html(**kwargs)
 
 
 def add_position_column(df):
@@ -48,7 +56,7 @@ def h2h(h2h_comparisons):
     table_attributes = style.calculate_table_attributes(isSortable=False, hasPositionColumn=True)
     styler = df.style.format({'%': '{:g}'}).set_table_attributes(table_attributes).hide().\
         map(style.percentage, subset=['%'])
-    return styler.to_html()
+    return to_html_stable(styler)
 
 
 def places(places_data, matchups, opp_flag, is_overall, n_last):
@@ -78,7 +86,7 @@ def places(places_data, matchups, opp_flag, is_overall, n_last):
     styler = df.style.format({c: '{:g}' for c in set(cols) - {'Team'}}).\
         set_table_attributes(table_attributes).hide().\
         apply(style.opponent_place if opp_flag else style.place, subset=matchups)
-    return styler.to_html()
+    return to_html_stable(styler)
 
 
 def scores(scores_data, matchups, opp_flag, n_last):
@@ -112,4 +120,4 @@ def scores(scores_data, matchups, opp_flag, n_last):
     styler = df.style.format({c: '{:g}' for c in set(cols) - {'Team'}}).\
         set_table_attributes(table_attributes).hide().\
         apply(style.opponent_score if opp_flag else style.score, subset=matchups)
-    return styler.to_html()
+    return to_html_stable(styler)

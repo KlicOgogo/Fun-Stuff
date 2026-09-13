@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from table import style
-from table.common import add_position_column
+from table.common import add_position_column, to_html_stable
 
 
 _hockey_categories = {
@@ -110,7 +110,7 @@ def pairwise_comparisons(comparisons_data, matchups, is_opponent, n_last, less_w
         set_table_attributes(table_attributes).hide().\
         apply(lambda s: style.extremum(s, best[s.name], worst[s.name]), subset=matchups).\
         map(style.percentage, subset=pd.IndexSlice[list(df_data.keys()), perc_cols])
-    return styler.to_html()
+    return to_html_stable(styler)
 
 
 def each_category_stats(stats, total_comparison, matchups, less_win_categories):
@@ -151,7 +151,7 @@ def each_category_stats(stats, total_comparison, matchups, less_win_categories):
         styler = styler.map(style.value, subset=pd.IndexSlice[list(df_data.keys()), ['Diff']])
     extremum_cols = [*matchups, 'Total'] if total_comparison is None else [*matchups, 'Total', 'Real']
     styler = styler.apply(extremum_lambda, subset=pd.IndexSlice[df.index, extremum_cols])
-    return styler.to_html()
+    return to_html_stable(styler)
 
 
 def most_categories_stats(stats, total_comparison, matchups):
@@ -193,7 +193,7 @@ def most_categories_stats(stats, total_comparison, matchups):
         map(style.pair_result, subset=matchups)
     if total_comparison is not None:
         styler = styler.map(style.value, subset=pd.IndexSlice[list(df_data.keys()), ['Diff']])
-    return styler.to_html()
+    return to_html_stable(styler)
 
 
 def matchup(stats_with_plays, places_with_plays, places_sum, categories_with_plays, less_win_categories, metrics):
@@ -236,4 +236,4 @@ def matchup(stats_with_plays, places_with_plays, places_sum, categories_with_pla
         styler = styler.map(style.percentage, subset=pd.IndexSlice[df_stats.index, ['TP']])
         if 'ER' in metrics:
             styler = styler.map(style.pair_result, subset=pd.IndexSlice[df_stats.index, ['ER']])
-    return styler.to_html()
+    return to_html_stable(styler)

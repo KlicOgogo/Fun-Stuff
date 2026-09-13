@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from table import style
-from table.common import add_position_column
+from table.common import add_position_column, to_html_stable
 
 
 _epsilon = 0.00000000001
@@ -59,4 +59,4 @@ def matchup(players_stats, categories_data):
     table_attrs = style.calculate_table_attributes(isSortable=True, hasPositionColumn=True)
     styler = df.style.format('{:g}', subset=list(set(category_columns) - {'ATOI', ' ', '  '})).\
         set_table_attributes(table_attrs).hide()
-    return styler.to_html()
+    return to_html_stable(styler)

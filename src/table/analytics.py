@@ -32,7 +32,7 @@ def category_power(places_by_categories, categories, n_last=None):
     styler = df.style.format('{:g}', subset=categories).\
         set_table_attributes(table_attributes).hide().\
         apply(style.category_power, subset=categories)
-    return styler.to_html()
+    return common.to_html_stable(styler)
 
 
 def category_rankings(places_by_categories, categories):
@@ -53,7 +53,7 @@ def category_rankings(places_by_categories, categories):
     df = df.iloc[np.lexsort((df['Team'],))]
     table_attributes = style.calculate_table_attributes(isSortable=False, hasPositionColumn=False)
     styler = df.style.set_table_attributes(table_attributes).hide()
-    return styler.to_html()
+    return common.to_html_stable(styler)
 
 
 def h2h_category_record(places_by_categories, categories, my_team_key, n_last):
@@ -101,7 +101,7 @@ def h2h_category_record(places_by_categories, categories, my_team_key, n_last):
     styler = df.style.format('{:g}', subset=percentage_cols).\
         set_table_attributes(table_attributes).hide().\
         map(style.percentage, subset=percentage_cols)
-    return styler.to_html()
+    return common.to_html_stable(styler)
 
 
 def power_predictions(places_by_categories, my_team_key, matchups):
@@ -140,7 +140,7 @@ def power_predictions(places_by_categories, my_team_key, matchups):
     table_attributes = style.calculate_table_attributes(isSortable=False, hasPositionColumn=True)
     styler = df.style.format({'%': '{:g}'}).set_table_attributes(table_attributes).hide().\
         map(style.percentage, subset=['%'])
-    return styler.to_html()
+    return common.to_html_stable(styler)
 
 
 def power_predictions_h2h(places_by_categories):
@@ -186,4 +186,4 @@ def category_win_stats(win_stats, categories, n_last=None):
     styler = df.style.format('{:g}', subset=categories).\
         set_table_attributes(table_attributes).hide().\
         apply(style.each_category_win_stat, subset=categories)
-    return styler.to_html()
+    return common.to_html_stable(styler)
