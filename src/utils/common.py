@@ -173,6 +173,7 @@ def save_homepage(global_config, index_config, league_names):
         sports_display = _sports_to_display[sports]
         main_league_name = league_names[sports][main_league]
         schedule_insights_matchup = None
+        results_report_number = None
 
         for report_type in global_config['report_types']:
             github = global_config[report_type]['github']
@@ -192,11 +193,15 @@ def save_homepage(global_config, index_config, league_names):
                 _, latest_report_link, _ = _get_season_reports(prev_season_relative_path, github)
                 latest_report_number = 0
 
+            if report_type == 'results':
+                results_report_number = latest_report_number
+
             if schedule_insights_matchup is None:
                 schedule_insights_matchup = latest_report_number + 1
 
-            reports_type_name = report_type.capitalize()
-            sports_indexes[sports_display][main_league_name].append([reports_type_name, latest_report_link])
+            if latest_report_link and latest_report_number == results_report_number:
+                reports_type_name = report_type.capitalize()
+                sports_indexes[sports_display][main_league_name].append([reports_type_name, latest_report_link])
 
         if schedule_insights_matchup is None:
             continue
