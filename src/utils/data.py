@@ -63,6 +63,7 @@ class BrowserManager(object):
 
 
 _offline_data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data')
+_read_max_count = 5
 
 
 def _parse_box_scores_titles(tables):
@@ -248,11 +249,11 @@ def _box_scores_offline(league_id, league_name, team_names, sports, matchup):
     return None
 
 
-def _box_scores_online(league_id, sports, matchup, pairs, group_schedule, browser):
+def _box_scores_online(league_id, sports, matchup, pairs, schedule, browser):
     today = get_today()
     season_start_year = today.year if today.month > 6 else today.year - 1
 
-    scoring_period_id = (group_schedule[matchup][0][0] - group_schedule[1][0][0]).days + 1
+    scoring_period_id = (schedule[matchup][0][0] - schedule[1][0][0]).days + 1
     box_scores_stats = {}
     for pair in pairs:
         team_pair = (pair[0][0], pair[1][0])
@@ -289,7 +290,7 @@ def _box_scores_online(league_id, sports, matchup, pairs, group_schedule, browse
     return box_scores_stats
 
 
-def group_box_scores(group_settings, group_schedule, matchup, browser, scoreboards, online_page_matchups):
+def group_box_scores(group_settings, schedule, matchup, browser, scoreboards, online_page_matchups):
     if not group_settings['is_full_support']:
         return None
 
@@ -305,7 +306,7 @@ def group_box_scores(group_settings, group_schedule, matchup, browser, scoreboar
                     league, league_name, team_names, sports, current_matchup)
             if matchup_box_scores is None:
                 matchup_box_scores = _box_scores_online(
-                    league, sports, current_matchup, pairs[current_matchup], group_schedule, browser)
+                    league, sports, current_matchup, pairs[current_matchup], schedule, browser)
             box_scores[league][current_matchup] = matchup_box_scores
 
     return box_scores
@@ -384,10 +385,15 @@ def _schedule(league_id, sports, is_playoffs_support, is_offline, browser):
 
     div_captions = None
     caption_captions = None
-    while not div_captions and not caption_captions:
+    read_count = 0
+    while (not div_captions or not caption_captions) and read_count < _read_max_count:
         schedule_html = browser.read_page_source(schedule_url)
         div_captions = schedule_html.findAll('div', {'class': 'table-caption'})
         caption_captions = schedule_html.findAll('caption', {'class': 'Table__Caption'})
+        read_count += 1
+
+    if not div_captions or not caption_captions:
+        return None
 
     league_schedule = {}
     number = 0
@@ -408,11 +414,12 @@ def group_schedule(group_settings, browser, use_offline_schedule):
     for league in group_settings['leagues']:
         current_schedule = _schedule(
             league, sports, group_settings['is_playoffs_support'], use_offline_schedule, browser)
+
+        if current_schedule is None or schedule != current_schedule:
+            return None
+
         if schedule is None:
             schedule = current_schedule
-        elif schedule != current_schedule:
-            schedule = None
-            break
 
     return schedule
 
