@@ -173,7 +173,7 @@
     {
         "sports": "basketball",
         "leagues": ["663741569"],
-        "tiebreaker": "PTS",
+        "tiebreaker": "NO",
         "is_each_category": false,
         "is_full_support": true,
         "is_playoffs_support": true,
